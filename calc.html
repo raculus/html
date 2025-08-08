@@ -1,0 +1,213 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>현금 계산기</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            max-width: 500px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        h1 {
+            text-align: center;
+            color: #333;
+            margin-bottom: 30px;
+        }
+        .money-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 15px;
+            padding: 10px;
+            border: 1px solid #e0e0e0;
+            border-radius: 5px;
+            background-color: #fafafa;
+        }
+        .money-label {
+            font-weight: bold;
+            color: #333;
+            min-width: 80px;
+        }
+        .money-input {
+            width: 80px;
+            padding: 8px;
+            border: 1px solid #ddd;
+            border-radius: 3px;
+            text-align: center;
+            font-size: 16px;
+        }
+        .money-calc {
+            font-size: 14px;
+            color: #666;
+            min-width: 100px;
+            text-align: right;
+        }
+        .total-section {
+            margin-top: 30px;
+            padding: 20px;
+            background-color: #e8f5e8;
+            border-radius: 8px;
+            border: 2px solid #4CAF50;
+        }
+        .total-row {
+            display: flex;
+            justify-content: space-between;
+            font-size: 18px;
+            font-weight: bold;
+            color: #2e7d32;
+        }
+        .reset-btn {
+            width: 100%;
+            padding: 12px;
+            margin-top: 15px;
+            background-color: #f44336;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+        }
+        .reset-btn:hover {
+            background-color: #da190b;
+        }
+        input:focus {
+            outline: none;
+            border-color: #4CAF50;
+            box-shadow: 0 0 5px rgba(76, 175, 80, 0.3);
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>💰 현금 계산기</h1>
+        
+        <div class="money-row">
+            <span class="money-label">십만원</span>
+            <input type="number" class="money-input" id="won100000" min="0" oninput="calculate()" placeholder="0">
+            <span class="money-calc" id="calc100000">0원</span>
+        </div>
+        
+        <div class="money-row">
+            <span class="money-label">오만원</span>
+            <input type="number" class="money-input" id="won50000" min="0" oninput="calculate()" placeholder="0">
+            <span class="money-calc" id="calc50000">0원</span>
+        </div>
+        
+        <div class="money-row">
+            <span class="money-label">만원</span>
+            <input type="number" class="money-input" id="won10000" min="0" oninput="calculate()" placeholder="0">
+            <span class="money-calc" id="calc10000">0원</span>
+        </div>
+        
+        <div class="money-row">
+            <span class="money-label">오천원</span>
+            <input type="number" class="money-input" id="won5000" min="0" oninput="calculate()" placeholder="0">
+            <span class="money-calc" id="calc5000">0원</span>
+        </div>
+        
+        <div class="money-row">
+            <span class="money-label">천원</span>
+            <input type="number" class="money-input" id="won1000" min="0" oninput="calculate()" placeholder="0">
+            <span class="money-calc" id="calc1000">0원</span>
+        </div>
+        
+        <div class="money-row">
+            <span class="money-label">오백원</span>
+            <input type="number" class="money-input" id="won500" min="0" oninput="calculate()" placeholder="0">
+            <span class="money-calc" id="calc500">0원</span>
+        </div>
+        
+        <div class="money-row">
+            <span class="money-label">백원</span>
+            <input type="number" class="money-input" id="won100" min="0" oninput="calculate()" placeholder="0">
+            <span class="money-calc" id="calc100">0원</span>
+        </div>
+        
+        <div class="money-row">
+            <span class="money-label">오십원</span>
+            <input type="number" class="money-input" id="won50" min="0" oninput="calculate()" placeholder="0">
+            <span class="money-calc" id="calc50">0원</span>
+        </div>
+        
+        <div class="money-row">
+            <span class="money-label">십원</span>
+            <input type="number" class="money-input" id="won10" min="0" oninput="calculate()" placeholder="0">
+            <span class="money-calc" id="calc10">0원</span>
+        </div>
+        
+        <div class="total-section">
+            <div class="total-row">
+                <span>총 계산 금액:</span>
+                <span id="totalAmount">0원</span>
+            </div>
+            <button class="reset-btn" onclick="resetAll()">전체 초기화</button>
+        </div>
+    </div>
+
+    <script>
+        function calculate() {
+            // 각 단위별 수량과 가치
+            const denominations = [
+                { id: 'won100000', value: 100000 },
+                { id: 'won50000', value: 50000 },
+                { id: 'won10000', value: 10000 },
+                { id: 'won5000', value: 5000 },
+                { id: 'won1000', value: 1000 },
+                { id: 'won500', value: 500 },
+                { id: 'won100', value: 100 },
+                { id: 'won50', value: 50 },
+                { id: 'won10', value: 10 }
+            ];
+            
+            let total = 0;
+            
+            // 각 단위별 계산
+            denominations.forEach(denom => {
+                const quantity = parseInt(document.getElementById(denom.id).value) || 0;
+                const amount = quantity * denom.value;
+                
+                // 개별 계산 결과 표시
+                document.getElementById('calc' + denom.value).textContent = amount.toLocaleString() + '원';
+                
+                // 총합에 추가
+                total += amount;
+            });
+            
+            // 총 금액 표시
+            document.getElementById('totalAmount').textContent = total.toLocaleString() + '원';
+        }
+        
+        function resetAll() {
+            // 모든 입력 필드 초기화
+            const inputs = document.querySelectorAll('.money-input');
+            inputs.forEach(input => {
+                input.value = '';
+            });
+            
+            // 모든 계산 결과 초기화
+            const calcs = document.querySelectorAll('.money-calc');
+            calcs.forEach(calc => {
+                calc.textContent = '0원';
+            });
+            
+            // 총 금액 초기화
+            document.getElementById('totalAmount').textContent = '0원';
+        }
+        
+        // 페이지 로드 시 초기 계산
+        window.onload = function() {
+            calculate();
+        }
+    </script>
+</body>
+</html>
