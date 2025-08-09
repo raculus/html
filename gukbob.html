@@ -117,6 +117,39 @@
         .collapsible-content.collapsed {
             max-height: 0;
         }
+        .popup {
+            position: fixed;
+            top: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            padding: 12px 20px;
+            border-radius: 5px;
+            color: white;
+            font-weight: bold;
+            z-index: 1000;
+            opacity: 0;
+            transform: translateX(-50%) translateY(-100%);
+            transition: all 0.3s ease;
+        }
+        
+        .popup.show {
+            opacity: 1;
+            transform: translateX(-50%) translateY(0);
+        }
+        
+        .popup.success {
+            background-color: #28a745;
+            border-left: 4px solid #1e7e34;
+        }
+        .popup.info {
+            background-color: #17a2b8;
+            border-left: 4px solid #117a8b;
+        }
+        
+        .popup.error {
+            background-color: #dc3545;
+            border-left: 4px solid #bd2130;
+        }
     </style>
 </head>
 <body>
@@ -377,10 +410,44 @@
     </div>
 
     <script>
+        // 팝업 표시 함수
+        function showPopup(message, type = 'success') {
+            // 기존 팝업이 있으면 제거
+            const existingPopup = document.querySelector('.popup');
+            if (existingPopup) {
+                existingPopup.remove();
+            }
+            
+            // 새 팝업 생성
+            const popup = document.createElement('div');
+            popup.className = `popup ${type}`;
+            popup.textContent = message;
+            
+            // body에 추가
+            document.body.appendChild(popup);
+            
+            // 애니메이션 시작
+            setTimeout(() => {
+                popup.classList.add('show');
+            }, 10);
+            
+            // 3초 후 자동 제거
+            setTimeout(() => {
+                popup.classList.remove('show');
+                setTimeout(() => {
+                    if (popup.parentNode) {
+                        popup.parentNode.removeChild(popup);
+                    }
+                }, 300);
+            }, 3000);
+        }
         // 오늘 날짜를 기본값으로 설정
         document.addEventListener('DOMContentLoaded', function() {
             // 이전 입력값 불러오기 (날짜 설정 전에)
             loadSavedData();
+            
+            // API에서 리뷰 개수 불러오기
+            loadReviewCount();
             
             // 자동 저장 설정
             setupAutoSave();
@@ -389,8 +456,8 @@
             calculateShortage();
             calculateExperience();
             calculateDelivery();
-            calculateCashNeeded();
-            calculatePredictedMonthly();
+            Calculator.calculateCashNeeded();
+            Calculator.calculatePredictedMonthly();
         });
         
         // 보고서 섹션 초기 높이 설정
@@ -540,13 +607,13 @@
                     });
                     
                     // 계산 함수들 실행
-                    calculateTotal();
-                    calculateExpenseTotal();
+                    Calculator.calculateTotal();
+                    Calculator.calculateExpenseTotal();
                     calculateShortage();
                     calculateExperience();
                     calculateDelivery();
-                    calculateCashNeeded();
-                    calculatePredictedMonthly();
+                    Calculator.calculateCashNeeded();
+                    Calculator.calculatePredictedMonthly();
                 } catch (error) {
                     console.error('압축 해제 중 오류:', error);
                 }
@@ -562,13 +629,13 @@
                     });
                     
                     // 계산 함수들 실행
-                    calculateTotal();
-                    calculateExpenseTotal();
+                    Calculator.calculateTotal();
+                    Calculator.calculateExpenseTotal();
                     calculateShortage();
                     calculateExperience();
                     calculateDelivery();
-                    calculateCashNeeded();
-                    calculatePredictedMonthly();
+                    Calculator.calculateCashNeeded();
+                    Calculator.calculatePredictedMonthly();
                     
                     // 기존 URL을 압축된 형태로 변환
                     saveData();
@@ -589,13 +656,13 @@
                             });
                             
                             // 계산 함수들 실행
-                            calculateTotal();
-                            calculateExpenseTotal();
+                            Calculator.calculateTotal();
+                            Calculator.calculateExpenseTotal();
                             calculateShortage();
                             calculateExperience();
                             calculateDelivery();
-                            calculateCashNeeded();
-                            calculatePredictedMonthly();
+                            Calculator.calculateCashNeeded();
+                            Calculator.calculatePredictedMonthly();
                             
                             // localStorage 데이터를 압축된 URL로 이전 후 삭제
                             saveData();
@@ -705,305 +772,416 @@
             document.getElementById('expenseTotal').value = expenseTotal;
         }
 
-        function calculateShortage() {
-            const shortageAmount = parseFloat(document.getElementById('shortageAmount').value) || 0;
-            const transferCount = parseInt(document.getElementById('transferCount').value) || 0;
-            
-            let shortageText = '';
-            if (shortageAmount !== 0) {
-                shortageText = `${shortageAmount.toLocaleString()}원`;
-                if (transferCount > 0) {
-                    shortageText += `(계좌이체 ${transferCount}건)`;
+        // 공통 필드 처리 함수들
+        function createAmountCountHandler(config) {
+            return {
+                calculateDisplay: function() {
+                    const amount = parseFloat(document.getElementById(config.amountId).value) || 0;
+                    const count = parseInt(document.getElementById(config.countId).value) || 0;
+                    
+                    let displayText;
+                    if (config.type === 'shortage') {
+                        displayText = amount !== 0 ? `${amount.toLocaleString()}원` : '0원';
+                        if (amount !== 0 && count > 0) {
+                            displayText += `(계좌이체 ${count}건)`;
+                        }
+                    } else if (config.type === 'experience') {
+                        displayText = `${amount.toLocaleString()}원(${count}건)`;
+                    } else if (config.type === 'delivery') {
+                        displayText = `${count}회(${amount.toLocaleString()}원)`;
+                    }
+                    
+                    document.getElementById(config.displayId).value = displayText;
+                },
+                
+                handleAmountChange: function() {
+                    const amount = parseFloat(document.getElementById(config.amountId).value) || 0;
+                    const count = parseInt(document.getElementById(config.countId).value) || 0;
+                    
+                    if (config.type === 'shortage') {
+                        if (amount !== 0 && count === 0) {
+                            document.getElementById(config.countId).value = 1;
+                        } else if (amount === 0 && count !== 0) {
+                            document.getElementById(config.countId).value = 0;
+                        }
+                    } else {
+                        // experience, delivery 공통 로직
+                        if (amount > 0 && count === 0) {
+                            document.getElementById(config.countId).value = 1;
+                        } else if (amount === 0 && count !== 0) {
+                            document.getElementById(config.countId).value = 0;
+                        }
+                    }
+                    
+                    this.calculateDisplay();
+                },
+                
+                handleCountChange: function() {
+                    const amount = parseFloat(document.getElementById(config.amountId).value) || 0;
+                    const count = parseInt(document.getElementById(config.countId).value) || 0;
+                    
+                    if (count === 0 && amount !== 0) {
+                        document.getElementById(config.amountId).value = 0;
+                    } else if (config.type === 'shortage' && count > 0 && amount === 0) {
+                        document.getElementById(config.amountId).value = -13000;
+                    }
+                    
+                    this.calculateDisplay();
                 }
-            } else {
-                shortageText = '0원';
-            }
-            
-            document.getElementById('shortage').value = shortageText;
+            };
         }
 
-        function handleShortageAmountChange() {
-            const amount = parseFloat(document.getElementById('shortageAmount').value) || 0;
-            const count = parseInt(document.getElementById('transferCount').value) || 0;
-            
-            // 금액이 0이 아니고 건수가 0일 때 자동으로 건수를 1로 설정
-            if (amount !== 0 && count === 0) {
-                document.getElementById('transferCount').value = 1;
-            }
-            // 금액이 0일 때 건수도 0으로 설정
-            else if (amount === 0 && count !== 0) {
-                document.getElementById('transferCount').value = 0;
-            }
-            
-            calculateShortage();
-        }
+        // 각 필드별 핸들러 생성
+        const shortageHandler = createAmountCountHandler({
+            type: 'shortage',
+            amountId: 'shortageAmount',
+            countId: 'transferCount',
+            displayId: 'shortage'
+        });
 
-        function handleTransferCountChange() {
-            const amount = parseFloat(document.getElementById('shortageAmount').value) || 0;
-            const count = parseInt(document.getElementById('transferCount').value) || 0;
-            
-            // 건수가 0일 때 금액도 0으로 설정
-            if (count === 0 && amount !== 0) {
-                document.getElementById('shortageAmount').value = 0;
-            }
-            // 건수가 0이 아니고 금액이 0일 때 금액을 기본값으로 설정 (예: -13000)
-            else if (count > 0 && amount === 0) {
-                document.getElementById('shortageAmount').value = -13000;
-            }
-            
-            calculateShortage();
-        }
+        const experienceHandler = createAmountCountHandler({
+            type: 'experience',
+            amountId: 'experienceAmount',
+            countId: 'experienceCount',
+            displayId: 'experienceService'
+        });
 
-        function calculateExperience() {
-            const experienceAmount = parseFloat(document.getElementById('experienceAmount').value) || 0;
-            const experienceCount = parseInt(document.getElementById('experienceCount').value) || 0;
-            
-            const experienceText = `${experienceAmount.toLocaleString()}원(${experienceCount}건)`;
-            document.getElementById('experienceService').value = experienceText;
-        }
+        const deliveryHandler = createAmountCountHandler({
+            type: 'delivery',
+            amountId: 'deliveryAmount',
+            countId: 'deliveryCount',
+            displayId: 'delivery'
+        });
 
-        function handleExperienceAmountChange() {
-            const amount = parseFloat(document.getElementById('experienceAmount').value) || 0;
-            const count = parseInt(document.getElementById('experienceCount').value) || 0;
-            
-            // 금액이 0보다 크고 건수가 0일 때 자동으로 건수를 1로 설정
-            if (amount > 0 && count === 0) {
-                document.getElementById('experienceCount').value = 1;
-            }
-            // 금액이 0일 때 건수도 0으로 설정
-            else if (amount === 0 && count !== 0) {
-                document.getElementById('experienceCount').value = 0;
-            }
-            
-            calculateExperience();
-        }
+        // 기존 함수들을 핸들러로 대체
+        function calculateShortage() { shortageHandler.calculateDisplay(); }
+        function handleShortageAmountChange() { shortageHandler.handleAmountChange(); }
+        function handleTransferCountChange() { shortageHandler.handleCountChange(); }
 
-        function handleExperienceCountChange() {
-            const amount = parseFloat(document.getElementById('experienceAmount').value) || 0;
-            const count = parseInt(document.getElementById('experienceCount').value) || 0;
-            
-            // 건수가 0일 때 금액도 0으로 설정
-            if (count === 0 && amount !== 0) {
-                document.getElementById('experienceAmount').value = 0;
-            }
-            
-            calculateExperience();
-        }
+        function calculateExperience() { experienceHandler.calculateDisplay(); }
+        function handleExperienceAmountChange() { experienceHandler.handleAmountChange(); }
+        function handleExperienceCountChange() { experienceHandler.handleCountChange(); }
 
-        function calculateDelivery() {
-            const deliveryCount = parseInt(document.getElementById('deliveryCount').value) || 0;
-            const deliveryAmount = parseFloat(document.getElementById('deliveryAmount').value) || 0;
-            
-            const deliveryText = `${deliveryCount}회(${deliveryAmount.toLocaleString()}원)`;
-            document.getElementById('delivery').value = deliveryText;
-        }
+        function calculateDelivery() { deliveryHandler.calculateDisplay(); }
+        function handleDeliveryAmountChange() { deliveryHandler.handleAmountChange(); }
+        function handleDeliveryCountChange() { deliveryHandler.handleCountChange(); }
 
-        function handleDeliveryAmountChange() {
-            const amount = parseFloat(document.getElementById('deliveryAmount').value) || 0;
-            const count = parseInt(document.getElementById('deliveryCount').value) || 0;
+        // 공통 유틸리티 함수들
+        const FormUtils = {
+            // 숫자 값 파싱 (기본값 0)
+            parseNumber: (value) => parseFloat(value) || 0,
+            parseInteger: (value) => parseInt(value) || 0,
             
-            // 금액이 0보다 크고 건수가 0일 때 자동으로 건수를 1로 설정
-            if (amount > 0 && count === 0) {
-                document.getElementById('deliveryCount').value = 1;
-            }
-            // 금액이 0일 때 건수도 0으로 설정
-            else if (amount === 0 && count !== 0) {
-                document.getElementById('deliveryCount').value = 0;
-            }
+            // 요소 값 가져오기/설정하기
+            getValue: (id) => document.getElementById(id).value,
+            setValue: (id, value) => document.getElementById(id).value = value,
+            getNumberValue: (id) => FormUtils.parseNumber(document.getElementById(id).value),
+            getIntegerValue: (id) => FormUtils.parseInteger(document.getElementById(id).value),
             
-            calculateDelivery();
-        }
+            // 날짜 관련
+            getTodayString: () => {
+                const today = new Date();
+                const year = today.getFullYear();
+                const month = String(today.getMonth() + 1).padStart(2, '0');
+                const day = String(today.getDate()).padStart(2, '0');
+                return `${year}-${month}-${day}`;
+            },
+            
+            // 요일 계산
+            getDayOfWeek: (dateStr) => {
+                const days = ['일', '월', '화', '수', '목', '금', '토'];
+                const date = new Date(dateStr);
+                return days[date.getDay()];
+            },
+            
+            // 숫자 포맷팅
+            formatNumber: (num) => (num || 0).toLocaleString(),
+            
+            // 알림 표시
+            showClipboardResult: (button, success = true) => {
+                const originalText = button.textContent;
+                const originalColor = button.style.backgroundColor;
+                
+                if (success) {
+                    button.textContent = '복사완료!';
+                    button.style.backgroundColor = '#28a745';
+                } else {
+                    button.textContent = '복사실패';
+                    button.style.backgroundColor = '#dc3545';
+                }
+                
+                setTimeout(() => {
+                    button.textContent = originalText;
+                    button.style.backgroundColor = originalColor;
+                }, 2000);
+            }
+        };
 
-        function handleDeliveryCountChange() {
-            const amount = parseFloat(document.getElementById('deliveryAmount').value) || 0;
-            const count = parseInt(document.getElementById('deliveryCount').value) || 0;
-            
-            // 건수가 0일 때 금액도 0으로 설정
-            if (count === 0 && amount !== 0) {
-                document.getElementById('deliveryAmount').value = 0;
-            }
-            
-            calculateDelivery();
-        }
+        // 계산 함수들 통합
+        const Calculator = {
+            // 매출 관련 계산
+            calculateTotal: () => {
+                const cash = FormUtils.getNumberValue('cash');
+                const card = FormUtils.getNumberValue('card');
+                const total = cash + card;
+                FormUtils.setValue('totalSales', total);
+                Calculator.calculateSalesTotal();
+            },
 
-        function calculateCashNeeded() {
-            const currentCash = parseFloat(document.getElementById('currentCash').value) || 0;
-            const targetCash = parseFloat(document.getElementById('targetCash').value) || 100000;
-            const cashEnvelope = parseFloat(document.getElementById('cashEnvelope').value) || 0;
-            
-            // 목표시재를 맞추기 위해 필요한 현금입금액
-            const neededCash = targetCash - currentCash;
-            
-            // 돈봉투 증감량 = 필요한 현금입금액 (사용할 금액이므로 음수로 표시)
-            const cashAdjustment = -neededCash;
-            
-            // 최종 돈봉투 금액 = 현재 돈봉투 - 사용할 금액
-            const finalCashEnvelope = cashEnvelope - neededCash;
-            
-            document.getElementById('cashDeposit').value = neededCash;
-            document.getElementById('cashAdjustment').value = cashAdjustment;
-            document.getElementById('finalCashEnvelope').value = finalCashEnvelope;
-            
-            // 계산식 표시 (돈봉투에서 필요한 금액을 빼는 형태)
-            if (neededCash >= 0) {
-                document.getElementById('cashCalculation').value = `돈봉투 ${cashEnvelope.toLocaleString()}원 - ${neededCash.toLocaleString()}원 = ${finalCashEnvelope.toLocaleString()}원`;
-            } else {
-                // 현재시재가 목표시재보다 많을 경우 (돈봉투에 추가)
-                document.getElementById('cashCalculation').value = `돈봉투 ${cashEnvelope.toLocaleString()}원 + ${Math.abs(neededCash).toLocaleString()}원 = ${finalCashEnvelope.toLocaleString()}원`;
-            }
-        }
+            calculateSalesTotal: () => {
+                const totalSales = FormUtils.getNumberValue('totalSales');
+                const refund = FormUtils.getNumberValue('refund');
+                const salesTotal = totalSales - refund;
+                FormUtils.setValue('salesTotal', salesTotal);
+                Calculator.calculatePredictedMonthly();
+            },
 
-        function calculatePredictedMonthly() {
-            const currentMonthly = parseFloat(document.getElementById('monthlyTotal').value) || 0;
-            const todaySales = parseFloat(document.getElementById('salesTotal').value) || 0;
-            
-            // 오늘 매출이 있고, 현재 월누적매출이 있을 때만 예상값 표시
-            if (todaySales > 0 && currentMonthly >= 0) {
-                const predictedMonthly = currentMonthly + todaySales;
-                document.getElementById('predictedMonthlyTotal').textContent = predictedMonthly.toLocaleString();
-                document.getElementById('monthlyPrediction').style.display = 'block';
-            } else {
+            calculateExpenseTotal: () => {
+                const expenseCard = FormUtils.getNumberValue('expenseCard');
+                const expenseCash = FormUtils.getNumberValue('expenseCash');
+                const expenseTotal = expenseCard + expenseCash;
+                FormUtils.setValue('expenseTotal', expenseTotal);
+            },
+
+            // 예상 월누적매출 계산
+            calculatePredictedMonthly: () => {
+                const currentMonthly = FormUtils.getNumberValue('monthlyTotal');
+                const todaySales = FormUtils.getNumberValue('salesTotal');
+                
+                if (todaySales > 0 && currentMonthly >= 0) {
+                    const predictedMonthly = currentMonthly + todaySales;
+                    document.getElementById('predictedMonthlyTotal').textContent = FormUtils.formatNumber(predictedMonthly);
+                    document.getElementById('monthlyPrediction').style.display = 'block';
+                } else {
+                    document.getElementById('monthlyPrediction').style.display = 'none';
+                }
+            },
+
+            // 현금 계산
+            calculateCashNeeded: () => {
+                const currentCash = FormUtils.getNumberValue('currentCash');
+                const targetCash = FormUtils.getNumberValue('targetCash') || 100000;
+                const cashEnvelope = FormUtils.getNumberValue('cashEnvelope');
+                
+                const neededCash = targetCash - currentCash;
+                const cashAdjustment = -neededCash;
+                const finalCashEnvelope = cashEnvelope - neededCash;
+                
+                FormUtils.setValue('cashDeposit', neededCash);
+                FormUtils.setValue('cashAdjustment', cashAdjustment);
+                FormUtils.setValue('finalCashEnvelope', finalCashEnvelope);
+                
+                // 계산식 표시
+                const calculationText = neededCash >= 0 
+                    ? `돈봉투 ${FormUtils.formatNumber(cashEnvelope)}원 - ${FormUtils.formatNumber(neededCash)}원 = ${FormUtils.formatNumber(finalCashEnvelope)}원`
+                    : `돈봉투 ${FormUtils.formatNumber(cashEnvelope)}원 + ${FormUtils.formatNumber(Math.abs(neededCash))}원 = ${FormUtils.formatNumber(finalCashEnvelope)}원`;
+                
+                FormUtils.setValue('cashCalculation', calculationText);
+            }
+        };
+
+        // 기존 함수들을 Calculator로 대체
+        function calculateTotal() { Calculator.calculateTotal(); }
+        function calculateExpenseTotal() { Calculator.calculateExpenseTotal(); }
+        function calculateCashNeeded() { Calculator.calculateCashNeeded(); }
+        function calculatePredictedMonthly() { Calculator.calculatePredictedMonthly(); }
+
+        // UI 관리 객체
+        const UIManager = {
+            // 접기/펼치기 기능
+            toggleCollapse: (elementId) => {
+                const content = document.getElementById(elementId);
+                const header = content.previousElementSibling;
+                
+                if (content.classList.contains('collapsed')) {
+                    content.classList.remove('collapsed');
+                    header.classList.remove('collapsed');
+                    content.style.maxHeight = content.scrollHeight + 'px';
+                } else {
+                    content.classList.add('collapsed');
+                    header.classList.add('collapsed');
+                    content.style.maxHeight = '0px';
+                }
+            },
+
+            collapseSection: (elementId) => {
+                const content = document.getElementById(elementId);
+                const header = content.previousElementSibling;
+                
+                content.classList.add('collapsed');
+                header.classList.add('collapsed');
+                content.style.maxHeight = '0px';
+            },
+
+            // 예상 월누적매출 관련
+            applyPredictedMonthly: () => {
+                const predictedValue = document.getElementById('predictedMonthlyTotal').textContent.replace(/,/g, '');
+                FormUtils.setValue('monthlyTotal', predictedValue);
                 document.getElementById('monthlyPrediction').style.display = 'none';
+                saveData();
+            },
+
+            hidePrediction: () => {
+                document.getElementById('monthlyPrediction').style.display = 'none';
+            },
+
+            // 통장 관리
+            adjustBankAccount: (operation) => {
+                const currentBank = FormUtils.getNumberValue('bankAccount');
+                const adjustment = FormUtils.getNumberValue('bankAdjustment');
+                
+                if (adjustment === 0) {
+                    alert('증감 금액을 입력해주세요.');
+                    return;
+                }
+                
+                const newBalance = operation === '+' ? currentBank + adjustment : currentBank - adjustment;
+                
+                FormUtils.setValue('bankAccount', newBalance);
+                FormUtils.setValue('bankAdjustment', 0);
             }
-        }
+        };
 
-        function applyPredictedMonthly() {
-            const predictedValue = document.getElementById('predictedMonthlyTotal').textContent.replace(/,/g, '');
-            document.getElementById('monthlyTotal').value = predictedValue;
-            document.getElementById('monthlyPrediction').style.display = 'none';
-            
-            // 데이터 저장
-            saveData();
-        }
+        // 기존 함수들을 UIManager로 대체
+        function toggleCollapse(elementId) { UIManager.toggleCollapse(elementId); }
+        function collapseSection(elementId) { UIManager.collapseSection(elementId); }
+        function applyPredictedMonthly() { UIManager.applyPredictedMonthly(); }
+        function hidePrediction() { UIManager.hidePrediction(); }
+        function adjustBankAccount(operation) { UIManager.adjustBankAccount(operation); }
 
-        function hidePrediction() {
-            document.getElementById('monthlyPrediction').style.display = 'none';
-        }
+        // 보고서 관리 객체
+        const ReportManager = {
+            // 보고서에서 데이터 파싱
+            parseFromReport: (reportText) => {
+                const parsers = [
+                    { regex: /현금:\s*([\d,]+)원/, id: 'cash' },
+                    { regex: /카드:\s*([\d,]+)원/, id: 'card' },
+                    { regex: /서비스:\s*([\d,]+)원/, id: 'service' },
+                    { regex: /반품액:\s*([\d,]+)원/, id: 'refund' },
+                    { regex: /반품상세내역:\s*(.+)/, id: 'refundDetail', isText: true },
+                    { regex: /월누적매출:\s*([\d,]+)원/, id: 'monthlyTotal' },
+                    { regex: /금일시제:\s*([\d,]+)원/, id: 'todayCash' },
+                    { regex: /익일시제:\s*([\d,]+)원/, id: 'tomorrowCash' },
+                    { regex: /카드\s*:\s*([\d,]+)원/, id: 'expenseCard' },
+                    { regex: /현금\s*:\s*([\d,]+)원/, id: 'expenseCash' },
+                    { regex: /리뷰:\s*(\d+)팀/, id: 'review' },
+                    { regex: /재방문:\s*(\d+)팀/, id: 'revisit' },
+                    { regex: /현금총액\(돈봉투\):\s*([\d,]+)원/, id: 'cashEnvelope' },
+                    { regex: /통장:\s*([\d,]+)원/, id: 'bankAccount' }
+                ];
 
-        function adjustBankAccount(operation) {
-            const currentBank = parseFloat(document.getElementById('bankAccount').value) || 0;
-            const adjustment = parseFloat(document.getElementById('bankAdjustment').value) || 0;
-            
-            if (adjustment === 0) {
-                alert('증감 금액을 입력해주세요.');
-                return;
+                // 기본 필드 파싱
+                parsers.forEach(parser => {
+                    const match = reportText.match(parser.regex);
+                    if (match) {
+                        const value = parser.isText ? match[1] : match[1].replace(/,/g, '');
+                        FormUtils.setValue(parser.id, value);
+                    }
+                });
+
+                // 과부족 파싱 (복합 필드)
+                const shortageMatch = reportText.match(/과부족:\s*(-?[\d,]+)원(?:\(계좌이체\s*(\d+)건\))?/);
+                if (shortageMatch) {
+                    FormUtils.setValue('shortageAmount', shortageMatch[1].replace(/,/g, ''));
+                    if (shortageMatch[2]) {
+                        FormUtils.setValue('transferCount', shortageMatch[2]);
+                    }
+                }
+
+                // 체험단 서비스 파싱
+                const experienceMatch = reportText.match(/체험단 서비스내역:\s*([\d,]+)원\((\d+)건\)/);
+                if (experienceMatch) {
+                    FormUtils.setValue('experienceAmount', experienceMatch[1].replace(/,/g, ''));
+                    FormUtils.setValue('experienceCount', experienceMatch[2]);
+                }
+
+                // 배민포장 파싱
+                const deliveryMatch = reportText.match(/배민포장:\s*(\d+)회\(([\d,]+)원\)/);
+                if (deliveryMatch) {
+                    FormUtils.setValue('deliveryCount', deliveryMatch[1]);
+                    FormUtils.setValue('deliveryAmount', deliveryMatch[2].replace(/,/g, ''));
+                }
+            },
+
+            // 보고서 생성
+            generateReport: () => {
+                const formData = new FormData(document.getElementById('salesForm'));
+                const data = Object.fromEntries(formData);
+                
+                const defaults = {
+                    cash: 0, card: 0, service: 0, refund: 0, refundDetail: '0원',
+                    monthlyTotal: 0, todayCash: 100000, tomorrowCash: 100000,
+                    expenseCard: 0, expenseCash: 0, shortage: '0원',
+                    review: 0, revisit: 0, experienceService: '0원(0건)',
+                    delivery: '0회(0원)', cashDeposit: 0
+                };
+
+                // 날짜 포맷팅
+                const dateStr = data.date || FormUtils.getTodayString();
+                const [year, month, day] = dateStr.split('-');
+                const formattedDate = `${year}년 ${month}월 ${day}일 (${FormUtils.getDayOfWeek(dateStr)})`;
+
+                // 매출 계산
+                const cash = FormUtils.parseNumber(data.cash);
+                const card = FormUtils.parseNumber(data.card);
+                const totalSales = cash + card;
+                const refund = FormUtils.parseNumber(data.refund);
+                const salesTotal = totalSales - refund;
+                const expenseCard = FormUtils.parseNumber(data.expenseCard);
+                const expenseCash = FormUtils.parseNumber(data.expenseCash);
+                const expenseTotal = expenseCard + expenseCash;
+                
+                const report = `${formattedDate} 미례국밥 전포점
+총매출: ${FormUtils.formatNumber(totalSales)}원
+ 현금:  ${FormUtils.formatNumber(cash)}원
+ 카드:  ${FormUtils.formatNumber(card)}원
+서비스: ${FormUtils.formatNumber(FormUtils.parseNumber(data.service))}원
+ 반품액: ${FormUtils.formatNumber(refund)}원
+ 매출합계: ${FormUtils.formatNumber(salesTotal)}원
+반품상세내역: ${data.refundDetail || defaults.refundDetail}
+월누적매출: ${FormUtils.formatNumber(FormUtils.parseNumber(data.monthlyTotal))}원
+금일시제: ${FormUtils.formatNumber(FormUtils.parseNumber(data.todayCash) || defaults.todayCash)}원
+익일시제: ${FormUtils.formatNumber(FormUtils.parseNumber(data.tomorrowCash) || defaults.tomorrowCash)}원
+지출상세내역
+  카드 : ${FormUtils.formatNumber(expenseCard)}원
+  현금 : ${FormUtils.formatNumber(expenseCash)}원
+  total: ${FormUtils.formatNumber(expenseTotal)}원
+과부족:  ${data.shortage || defaults.shortage}
+리뷰: ${data.review || defaults.review}팀
+체험단 서비스내역: ${data.experienceService || defaults.experienceService}
+재방문: ${data.revisit || defaults.revisit}팀
+배민포장: ${data.delivery || defaults.delivery}
+현금총액(돈봉투): ${FormUtils.formatNumber(FormUtils.parseNumber(data.finalCashEnvelope) || FormUtils.parseNumber(data.cashEnvelope))}원
+통장: ${FormUtils.formatNumber(FormUtils.parseNumber(data.bankAccount))}원`;
+
+                document.getElementById('reportContent').textContent = report;
+                document.getElementById('result').style.display = 'block';
             }
-            
-            let newBalance;
-            if (operation === '+') {
-                newBalance = currentBank + adjustment;
-            } else {
-                newBalance = currentBank - adjustment;
-            }
-            
-            document.getElementById('bankAccount').value = newBalance;
-            document.getElementById('bankAdjustment').value = 0;
-        }
+        };
 
+        // 기존 함수들 대체
         function loadFromReport() {
-            const reportText = document.getElementById('reportInput').value;
+            const reportText = FormUtils.getValue('reportInput');
             if (!reportText.trim()) {
                 alert('보고서 텍스트를 입력해주세요.');
                 return;
             }
             
             try {
-                // 날짜 추출
-                // const dateMatch = reportText.match(/(\d{4})년\s*(\d{1,2})월\s*(\d{1,2})일/);
-                // if (dateMatch) {
-                //     const year = dateMatch[1];
-                //     const month = dateMatch[2].padStart(2, '0');
-                //     const day = dateMatch[3].padStart(2, '0');
-                //     document.getElementById('date').value = `${year}-${month}-${day}`;
-                // }
-                
-                // 매출 정보 추출
-                const cashMatch = reportText.match(/현금:\s*([\d,]+)원/);
-                if (cashMatch) document.getElementById('cash').value = cashMatch[1].replace(/,/g, '');
-                
-                const cardMatch = reportText.match(/카드:\s*([\d,]+)원/);
-                if (cardMatch) document.getElementById('card').value = cardMatch[1].replace(/,/g, '');
-                
-                const serviceMatch = reportText.match(/서비스:\s*([\d,]+)원/);
-                if (serviceMatch) document.getElementById('service').value = serviceMatch[1].replace(/,/g, '');
-                
-                const refundMatch = reportText.match(/반품액:\s*([\d,]+)원/);
-                if (refundMatch) document.getElementById('refund').value = refundMatch[1].replace(/,/g, '');
-                
-                const refundDetailMatch = reportText.match(/반품상세내역:\s*(.+)/);
-                if (refundDetailMatch) document.getElementById('refundDetail').value = refundDetailMatch[1];
-                
-                const monthlyMatch = reportText.match(/월누적매출:\s*([\d,]+)원/);
-                if (monthlyMatch) document.getElementById('monthlyTotal').value = monthlyMatch[1].replace(/,/g, '');
-                
-                // 시재 정보
-                const todayCashMatch = reportText.match(/금일시제:\s*([\d,]+)원/);
-                if (todayCashMatch) document.getElementById('todayCash').value = todayCashMatch[1].replace(/,/g, '');
-                
-                const tomorrowCashMatch = reportText.match(/익일시제:\s*([\d,]+)원/);
-                if (tomorrowCashMatch) document.getElementById('tomorrowCash').value = tomorrowCashMatch[1].replace(/,/g, '');
-                
-                // 지출 정보
-                const expenseCardMatch = reportText.match(/카드\s*:\s*([\d,]+)원/);
-                if (expenseCardMatch) document.getElementById('expenseCard').value = expenseCardMatch[1].replace(/,/g, '');
-                
-                const expenseCashMatch = reportText.match(/현금\s*:\s*([\d,]+)원/);
-                if (expenseCashMatch) document.getElementById('expenseCash').value = expenseCashMatch[1].replace(/,/g, '');
-                
-                // 과부족
-                const shortageMatch = reportText.match(/과부족:\s*(-?[\d,]+)원(?:\(계좌이체\s*(\d+)건\))?/);
-                if (shortageMatch) {
-                    document.getElementById('shortageAmount').value = shortageMatch[1].replace(/,/g, '');
-                    if (shortageMatch[2]) {
-                        document.getElementById('transferCount').value = shortageMatch[2];
-                    }
-                }
-                
-                // 기타 정보
-                const reviewMatch = reportText.match(/리뷰:\s*(\d+)팀/);
-                if (reviewMatch) document.getElementById('review').value = reviewMatch[1];
-                
-                const revisitMatch = reportText.match(/재방문:\s*(\d+)팀/);
-                if (revisitMatch) document.getElementById('revisit').value = revisitMatch[1];
-                
-                // 체험단 서비스
-                const experienceMatch = reportText.match(/체험단 서비스내역:\s*([\d,]+)원\((\d+)건\)/);
-                if (experienceMatch) {
-                    document.getElementById('experienceAmount').value = experienceMatch[1].replace(/,/g, '');
-                    document.getElementById('experienceCount').value = experienceMatch[2];
-                }
-                
-                // 배민포장
-                const deliveryMatch = reportText.match(/배민포장:\s*(\d+)회\(([\d,]+)원\)/);
-                if (deliveryMatch) {
-                    document.getElementById('deliveryCount').value = deliveryMatch[1];
-                    document.getElementById('deliveryAmount').value = deliveryMatch[2].replace(/,/g, '');
-                }
-                
-                // 현금총액과 통장
-                const cashEnvelopeMatch = reportText.match(/현금총액\(돈봉투\):\s*([\d,]+)원/);
-                if (cashEnvelopeMatch) document.getElementById('cashEnvelope').value = cashEnvelopeMatch[1].replace(/,/g, '');
-                
-                const bankMatch = reportText.match(/통장:\s*([\d,]+)원/);
-                if (bankMatch) document.getElementById('bankAccount').value = bankMatch[1].replace(/,/g, '');
+                ReportManager.parseFromReport(reportText);
                 
                 // 계산 함수들 호출
-                calculateTotal();
-                calculateExpenseTotal();
+                Calculator.calculateTotal();
+                Calculator.calculateExpenseTotal();
                 calculateShortage();
                 calculateExperience();
                 calculateDelivery();
-                calculateCashNeeded();
-                calculatePredictedMonthly();
+                Calculator.calculateCashNeeded();
+                Calculator.calculatePredictedMonthly();
                 
-                // 데이터를 URL에 저장
                 saveData();
-                
-                // 성공적으로 불러온 후 보고서 섹션 접기
-                collapseSection('reportSection');
-                
-                // alert('보고서에서 데이터를 성공적으로 불러왔습니다!');
-                document.getElementById('reportInput').value = '';
+                UIManager.collapseSection('reportSection');
+                FormUtils.setValue('reportInput', '');
                 
             } catch (error) {
                 alert('보고서 형식을 인식할 수 없습니다. 올바른 보고서를 입력해주세요.');
@@ -1011,134 +1189,53 @@
             }
         }
 
-        function generateReport() {
-            const formData = new FormData(document.getElementById('salesForm'));
-            const data = Object.fromEntries(formData);
-            
-            // 기본값 설정
-            const defaults = {
-                cash: 0,
-                card: 0,
-                service: 0,
-                refund: 0,
-                refundDetail: '0원',
-                monthlyTotal: 0,
-                todayCash: 100000,
-                tomorrowCash: 100000,
-                expenseCard: 0,
-                expenseCash: 0,
-                shortage: '0원',
-                review: 0,
-                revisit: 0,
-                experienceService: '0원(0건)',
-                delivery: '0회(0원)',
-                cashDeposit: 0
-            };
+        function generateReport() { ReportManager.generateReport(); }
 
-            // 날짜 포맷팅
-            const dateStr = data.date || new Date().toISOString().split('T')[0];
-            const [year, month, day] = dateStr.split('-');
-            const formattedDate = `${year}년 ${month}월 ${day}일 (${getDayOfWeek(dateStr)})`;
-
-            // 값이 비어있으면 기본값 사용
-            const cash = parseInt(data.cash) || defaults.cash;
-            const card = parseInt(data.card) || defaults.card;
-            const totalSales = cash + card;
-            const refund = parseInt(data.refund) || defaults.refund;
-            const salesTotal = totalSales - refund;
-            const expenseCard = parseInt(data.expenseCard) || defaults.expenseCard;
-            const expenseCash = parseInt(data.expenseCash) || defaults.expenseCash;
-            const expenseTotal = expenseCard + expenseCash;
-            
-            const report = `${formattedDate} 미례국밥 전포점
-총매출: ${totalSales.toLocaleString()}원
- 현금:  ${cash.toLocaleString()}원
- 카드:  ${card.toLocaleString()}원
-서비스: ${(parseInt(data.service) || defaults.service).toLocaleString()}원
- 반품액: ${refund.toLocaleString()}원
- 매출합계: ${salesTotal.toLocaleString()}원
-반품상세내역: ${data.refundDetail || defaults.refundDetail}
-월누적매출: ${(parseInt(data.monthlyTotal) || defaults.monthlyTotal).toLocaleString()}원
-금일시제: ${(parseInt(data.todayCash) || defaults.todayCash).toLocaleString()}원
-익일시제: ${(parseInt(data.tomorrowCash) || defaults.tomorrowCash).toLocaleString()}원
-지출상세내역
-  카드 : ${expenseCard.toLocaleString()}원
-  현금 : ${expenseCash.toLocaleString()}원
-  total: ${expenseTotal.toLocaleString()}원
-과부족:  ${data.shortage || defaults.shortage}
-리뷰: ${data.review || defaults.review}팀
-체험단 서비스내역: ${data.experienceService || defaults.experienceService}
-재방문: ${data.revisit || defaults.revisit}팀
-배민포장: ${data.delivery || defaults.delivery}
-현금총액(돈봉투): ${(parseInt(data.finalCashEnvelope) || parseInt(data.cashEnvelope) || 0).toLocaleString()}원
-통장: ${(parseInt(data.bankAccount) || 0).toLocaleString()}원`;
-
-            // 기존 보고서 내용 초기화
-            document.getElementById('reportContent').textContent = report;
-            document.getElementById('result').style.display = 'block';
-        }
-
-        function getDayOfWeek(dateStr) {
-            const days = ['일', '월', '화', '수', '목', '금', '토'];
-            const date = new Date(dateStr);
-            return days[date.getDay()];
-        }
+        function getDayOfWeek(dateStr) { return FormUtils.getDayOfWeek(dateStr); }
 
         function copyReport() {
             const reportContent = document.getElementById('reportContent').textContent;
-            navigator.clipboard.writeText(reportContent).then(function() {
-                const button = document.getElementById('copyBtn');
-                const originalText = button.textContent;
-                button.textContent = '복사완료!';
-                button.style.backgroundColor = '#28a745';
-                setTimeout(() => {
-                    button.textContent = originalText;
-                    button.style.backgroundColor = '#007bff';
-                }, 2000);
-            }).catch(function(err) {
-                alert('복사에 실패했습니다: ' + err);
-            });
+            const button = document.getElementById('copyBtn');
+            
+            navigator.clipboard.writeText(reportContent)
+                .then(() => FormUtils.showClipboardResult(button, true))
+                .catch(() => {
+                    FormUtils.showClipboardResult(button, false);
+                    alert('복사에 실패했습니다. 수동으로 복사해주세요.');
+                });
         }
 
         function resetForm() {
             document.getElementById('salesForm').reset();
             
-            // 날짜를 오늘로 설정 (정확한 형식으로)
-            const today = new Date();
-            const year = today.getFullYear();
-            const month = String(today.getMonth() + 1).padStart(2, '0');
-            const day = String(today.getDate()).padStart(2, '0');
-            document.getElementById('date').value = `${year}-${month}-${day}`;
+            // 날짜를 오늘로 설정
+            FormUtils.setValue('date', FormUtils.getTodayString());
             
             document.getElementById('result').style.display = 'none';
-            // 기본값들 다시 설정
-            document.getElementById('service').value = '0';
-            document.getElementById('refund').value = '0';
-            document.getElementById('todayCash').value = '100000';
-            document.getElementById('tomorrowCash').value = '100000';
-            document.getElementById('expenseCard').value = '0';
-            document.getElementById('expenseCash').value = '0';
-            document.getElementById('shortageAmount').value = '0';
-            document.getElementById('transferCount').value = '0';
-            document.getElementById('experienceAmount').value = '0';
-            document.getElementById('experienceCount').value = '0';
-            document.getElementById('deliveryCount').value = '0';
-            document.getElementById('deliveryAmount').value = '0';
-            document.getElementById('targetCash').value = '100000';
-            document.getElementById('currentCash').value = '0';
-            document.getElementById('cashEnvelope').value = '0';
-            document.getElementById('bankAccount').value = '0';
-            document.getElementById('bankAdjustment').value = '0';
-            document.getElementById('reportInput').value = '';
+            
+            // 기본값들 설정
+            const defaultValues = {
+                'service': '0', 'refund': '0', 'todayCash': '100000', 'tomorrowCash': '100000',
+                'expenseCard': '0', 'expenseCash': '0', 'shortageAmount': '0', 'transferCount': '0',
+                'experienceAmount': '0', 'experienceCount': '0', 'deliveryCount': '0', 'deliveryAmount': '0',
+                'targetCash': '100000', 'currentCash': '0', 'cashEnvelope': '0',
+                'bankAccount': '0', 'bankAdjustment': '0', 'reportInput': ''
+            };
+            
+            Object.entries(defaultValues).forEach(([id, value]) => FormUtils.setValue(id, value));
+            
+            // API에서 리뷰 개수 다시 불러오기
+            loadReviewCount();
+            
             // 계산 함수들 호출
             calculateShortage();
             calculateExperience();
             calculateDelivery();
-            calculateCashNeeded();
-            calculatePredictedMonthly();
+            Calculator.calculateCashNeeded();
+            Calculator.calculatePredictedMonthly();
         }
 
-        // 수동 저장 함수 (URL 복사) - 압축률 표시 추가
+        // 수동 저장 함수 (URL 복사)
         function saveDataManually() {
             const originalUrl = window.location.href;
             const originalLength = originalUrl.length;
@@ -1149,24 +1246,58 @@
             const compressedLength = compressedUrl.length;
             const compressionRatio = originalLength > 0 ? ((originalLength - compressedLength) / originalLength * 100).toFixed(1) : 0;
             
-            // URL 복사 기능 추가
-            navigator.clipboard.writeText(window.location.href).then(function() {
-                alert(`데이터가 압축되어 URL에 저장되었습니다!\nURL 길이: ${compressedLength}자\n압축률: ${compressionRatio > 0 ? compressionRatio + '% 단축' : '최적화됨'}\n클립보드에 복사되었습니다!`);
-            }).catch(function(err) {
-                alert(`데이터가 압축되어 URL에 저장되었습니다!\nURL 길이: ${compressedLength}자\n압축률: ${compressionRatio > 0 ? compressionRatio + '% 단축' : '최적화됨'}\n\n${window.location.href}`);
-            });
+            const message = `데이터가 압축되어 URL에 저장되었습니다!\nURL 길이: ${compressedLength}자\n압축률: ${compressionRatio > 0 ? compressionRatio + '% 단축' : '최적화됨'}`;
+            
+            navigator.clipboard.writeText(window.location.href)
+                .then(() => alert(message + '\n클립보드에 복사되었습니다!'))
+                .catch(() => alert(message + '\n\n' + window.location.href));
         }
 
-        // 저장된 데이터 삭제 (URL 파라미터 제거)
+        // 저장된 데이터 삭제
         function clearSavedData() {
             if (confirm('URL에 저장된 모든 데이터를 삭제하시겠습니까?')) {
-                // URL 파라미터 제거
                 window.history.replaceState({}, '', window.location.pathname);
-                
-                // 폼 초기화
                 resetForm();
-                
                 alert('URL에 저장된 데이터가 삭제되었습니다!');
+            }
+        }
+
+        // API에서 리뷰 개수 불러오기
+        async function loadReviewCount() {
+            showPopup('리뷰 개수 불러오는 중...', 'info');
+            try {
+                // 현재 월.일 계산
+                const today = new Date();
+                const month = today.getMonth() + 1;
+                const day = today.getDate();
+                const monthDay = `${month}.${day}`;
+                
+                const apiUrl = `https://api.jaehy.uk/1688300738/count/${monthDay}`;
+                console.log('API 호출:', apiUrl);
+                
+                const response = await fetch(apiUrl);
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                
+                const data = await response.text();
+                // data = API 응답: {"success":true,"placeId":"1688300738","targetDate":"8.10","count":0,"url":"https://m.place.naver.com/restaurant/1688300738/review/visitor?reviewSort=recent","extractedAt":"2025-08-09T19:26:51.652Z"}
+                const jsonData = JSON.parse(data);
+                const reviewCount = jsonData.count;
+
+                if (isNaN(reviewCount)) {
+                    throw new Error('Invalid response data');
+                }
+                
+                FormUtils.setValue('review', reviewCount);
+                showPopup('리뷰 불러오기 성공', 'success');
+                console.log('리뷰 개수 로드 성공:', reviewCount);
+                
+            } catch (error) {
+                console.error('리뷰 개수 로드 실패:', error);
+                FormUtils.setValue('review', ''); // 빈칸으로 설정
+                showPopup('리뷰개수 불러오기 실패', 'error');
             }
         }
     </script>
