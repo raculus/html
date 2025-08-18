@@ -150,6 +150,84 @@
             background-color: #dc3545;
             border-left: 4px solid #bd2130;
         }
+        
+        /* 도움말 버튼 및 툴팁 스타일 */
+        .help-tooltip {
+            position: relative;
+            display: inline-block;
+            margin-left: 8px;
+        }
+        
+        .help-tooltip::before {
+            content: '?';
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 18px;
+            height: 18px;
+            border-radius: 50%;
+            background-color: #007bff;
+            color: white;
+            font-size: 12px;
+            font-weight: bold;
+            cursor: help;
+            vertical-align: middle;
+        }
+        
+        .help-tooltip:hover::before {
+            background-color: #0056b3;
+        }
+        
+        .help-tooltip::after {
+            content: attr(data-help);
+            position: absolute;
+            bottom: 125%;
+            left: 50%;
+            transform: translateX(-50%);
+            background-color: #333;
+            color: white;
+            padding: 8px 12px;
+            border-radius: 6px;
+            font-size: 13px;
+            white-space: nowrap;
+            z-index: 1001;
+            opacity: 0;
+            visibility: hidden;
+            transition: opacity 0.3s, visibility 0.3s;
+            min-width: max-content;
+            max-width: 250px;
+            text-align: center;
+            line-height: 1.4;
+            pointer-events: none;
+            word-break: keep-all;
+        }
+        
+        /* 긴 텍스트는 적절한 너비에서 줄바꿈 */
+        .help-tooltip[data-help*="입력하세요"]::after,
+        .help-tooltip[data-help*="계산됩니다"]::after,
+        .help-tooltip[data-help*="관리"]::after {
+            white-space: normal;
+            min-width: 150px;
+        }
+        
+        .help-tooltip:hover::after,
+        .help-tooltip:focus::after {
+            opacity: 1;
+            visibility: visible;
+        }
+        
+        /* 툴팁 화살표 */
+        .help-tooltip:hover::after {
+            box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+        }
+        
+        /* 모바일에서는 터치 시 툴팁 표시 */
+        @media (hover: none) {
+            .help-tooltip:active::after {
+                opacity: 1;
+                visibility: visible;
+            }
+        }
     </style>
 </head>
 <body>
@@ -161,7 +239,7 @@
                 <h3 class="collapsible" onclick="toggleCollapse('reportSection')">보고서 불러오기</h3>
                 <div id="reportSection" class="collapsible-content">
                     <div class="form-group">
-                        <label for="reportInput">생성된 보고서 텍스트:</label>
+                        <label for="reportInput">생성된 보고서 텍스트</label>
                         <textarea id="reportInput" name="reportInput" placeholder="생성된 보고서를 여기에 붙여넣으세요..." rows="5"></textarea>
                     </div>
                     <div style="text-align: center;">
@@ -177,60 +255,60 @@
                     <button type="button" onclick="clearSavedData()">저장된 데이터 삭제</button>
                 </div>
                 <!-- <div style="margin-top: 15px; padding: 10px; background-color: #e3f2fd; border-radius: 5px; font-size: 14px; color: #1565c0;">
-                    <strong>압축 저장:</strong> 데이터가 자동으로 압축되어 URL에 저장됩니다. 긴 데이터도 짧은 URL로 변환하여 공유가 쉽습니다!
+                    <strong>압축 저장</strong> 데이터가 자동으로 압축되어 URL에 저장됩니다. 긴 데이터도 짧은 URL로 변환하여 공유가 쉽습니다!
                 </div> -->
             </div>
 
             <div class="form-group">
-                <label for="date">날짜 선택:</label>
+                <label for="date">날짜 선택</label>
                 <input type="date" id="date" name="date" required>
             </div>
 
             <div class="section">
-                <h3>매출 정보</h3>
+                <h3>매출<span class="help-tooltip" data-help="하루 동안의 매출 관련 정보를 입력하는 섹션입니다."></span></h3>
                 <div class="row">
                     <div class="col">
-                        <label for="cash">현금:</label>
+                        <label for="cash">현금</label>
                         <input type="number" id="cash" name="cash" placeholder="13,000" oninput="calculateTotal()">
                     </div>
                     <div class="col">
-                        <label for="card">카드:</label>
+                        <label for="card">카드</label>
                         <input type="number" id="card" name="card" placeholder="1,512,500" oninput="calculateTotal()">
                     </div>
                 </div>
                 
                 <div class="form-group">
-                    <label for="totalSales">총매출:</label>
+                    <label for="totalSales">현금+카드 총매출</label>
                     <input type="number" id="totalSales" name="totalSales" class="calculated" readonly>
                 </div>
 
                 <div class="row">
                     <div class="col">
-                        <label for="service">서비스:</label>
+                        <label for="service">서비스<span class="help-tooltip" data-help="무료로 제공한 서비스의 금액을 입력하세요."></span></label>
                         <input type="number" id="service" name="service" placeholder="0" value="0">
                     </div>
                     <div class="col">
-                        <label for="refund">반품액:</label>
+                        <label for="refund">반품액<span class="help-tooltip" data-help="반품 처리한 금액을 입력하세요."></span></label>
                         <input type="number" id="refund" name="refund" placeholder="0" value="0" oninput="calculateSalesTotal()">
                     </div>
                 </div>
 
                 <div class="form-group">
-                    <label for="salesTotal">매출합계:</label>
+                    <label for="salesTotal">매출합계<span class="help-tooltip" data-help="총매출에서 반품액을 뺀 최종 매출입니다."></span></label>
                     <input type="number" id="salesTotal" name="salesTotal" class="calculated" readonly>
                 </div>
 
                 <div class="form-group">
-                    <label for="refundDetail">반품상세내역:</label>
+                    <label for="refundDetail">반품상세내역<span class="help-tooltip" data-help="반품 사유나 상세 내역을 입력하세요."></span></label>
                     <textarea id="refundDetail" name="refundDetail" placeholder="반품 상세 내역 입력" rows="2"></textarea>
                 </div>
 
                 <div class="form-group">
-                    <label for="monthlyTotal">월누적매출:</label>
+                    <label for="monthlyTotal">월누적매출<span class="help-tooltip" data-help="이번 달 누적 매출액을 입력하세요."></span></label>
                     <input type="number" id="monthlyTotal" name="monthlyTotal" placeholder="31,748,000" oninput="calculatePredictedMonthly()">
                     <div id="monthlyPrediction" style="margin-top: 10px; padding: 10px; background-color: #fff3cd; border: 1px solid #ffeaa7; border-radius: 5px; display: none;">
                         <div style="font-size: 14px; color: #856404; margin-bottom: 8px;">
-                            <strong>예상 월누적매출:</strong> <span id="predictedMonthlyTotal">0</span>원
+                            <strong>예상 월누적매출</strong> <span id="predictedMonthlyTotal">0</span>원
                         </div>
                         <div style="text-align: center;">
                             <button type="button" onclick="applyPredictedMonthly()" style="background-color: #28a745; font-size: 14px; padding: 8px 16px;">예상값 적용</button>
@@ -241,50 +319,50 @@
             </div>
 
             <div class="section">
-                <h3>시재 정보</h3>
+                <h3>시재 정보<span class="help-tooltip" data-help="보통 수정하지 않습니다"></span></h3>
                 <div class="row">
                     <div class="col">
-                        <label for="todayCash">금일시제:</label>
+                        <label for="todayCash">금일시제</label>
                         <input type="number" id="todayCash" name="todayCash" placeholder="100,000" value="100000">
                     </div>
                     <div class="col">
-                        <label for="tomorrowCash">익일시제:</label>
+                        <label for="tomorrowCash">익일시제</label>
                         <input type="number" id="tomorrowCash" name="tomorrowCash" placeholder="100,000" value="100000">
                     </div>
                 </div>
             </div>
 
             <div class="section">
-                <h3>지출 정보</h3>
+                <h3>지출 정보<span class="help-tooltip" data-help="종량제 구매등 지출시 발생하는 내역입니다."></span></h3>
                 <div class="row">
                     <div class="col">
-                        <label for="expenseCard">카드 지출:</label>
+                        <label for="expenseCard">카드 지출</label>
                         <input type="number" id="expenseCard" name="expenseCard" placeholder="0" value="0" oninput="calculateExpenseTotal()">
                     </div>
                     <div class="col">
-                        <label for="expenseCash">현금 지출:</label>
+                        <label for="expenseCash">현금 지출</label>
                         <input type="number" id="expenseCash" name="expenseCash" placeholder="0" value="0" oninput="calculateExpenseTotal()">
                     </div>
                 </div>
                 
                 <div class="form-group">
-                    <label for="expenseTotal">지출 총액:</label>
+                    <label for="expenseTotal">지출 총액</label>
                     <input type="number" id="expenseTotal" name="expenseTotal" class="calculated" readonly>
                 </div>
 
                 <div class="row">
                     <div class="col">
-                        <label for="shortageAmount">과부족 금액:</label>
-                        <input type="number" id="shortageAmount" name="shortageAmount" placeholder="-13000" oninput="handleShortageAmountChange()">
+                        <label for="shortageAmount">과부족 금액<span class="help-tooltip" data-help="마감정산 화면에서의 과부족 금액입니다. 현재시재 입력 후 사용합니다."></span></label>
+                        <input type="number" id="shortageAmount" name="shortageAmount" placeholder="-12345">
                     </div>
                     <div class="col">
-                        <label for="transferCount">계좌이체 건수:</label>
-                        <input type="number" id="transferCount" name="transferCount" placeholder="1" oninput="handleTransferCountChange()">
+                        <label for="transferCount">계좌이체 건수</label>
+                        <input type="number" id="transferCount" name="transferCount" placeholder="">
                     </div>
                 </div>
 
                 <div class="form-group">
-                    <label for="shortage">과부족:</label>
+                    <label for="shortage">과부족</label>
                     <input type="text" id="shortage" name="shortage" class="calculated" readonly>
                 </div>
             </div>
@@ -293,96 +371,101 @@
                 <h3>기타 정보</h3>
                 <div class="row">
                     <div class="col">
-                        <label for="review">리뷰:</label>
+                        <label for="review">리뷰<span class="help-tooltip" data-help="네이버 플레이스에서의 리뷰수 입니다."></span></label>
                         <input type="number" id="review" name="review" placeholder="3">
                     </div>
                     <div class="col">
-                        <label for="revisit">재방문:</label>
+                        <label for="revisit">재방문<span class="help-tooltip" data-help="재방문 고객님을 직접 체크하여 작성합니다."></span></label>
                         <input type="number" id="revisit" name="revisit" placeholder="6">
                     </div>
                 </div>
 
                 <div class="row">
                     <div class="col">
-                        <label for="experienceAmount">체험단 서비스 금액:</label>
+                        <label for="experienceAmount">체험단 서비스 금액<span class="help-tooltip" data-help="체험단 1팀당 최대 25,000원입니다. (예를들어 23,000원 체험단 시 23,000이고 31,000체험단 시 25,000입니다.)"></span></label>
                         <input type="number" id="experienceAmount" name="experienceAmount" placeholder="0" oninput="handleExperienceAmountChange()">
                     </div>
                     <div class="col">
-                        <label for="experienceCount">체험단 서비스 건수:</label>
+                        <label for="experienceCount">체험단 서비스 건수</label>
                         <input type="number" id="experienceCount" name="experienceCount" placeholder="0" oninput="handleExperienceCountChange()">
                     </div>
                 </div>
 
                 <div class="form-group">
-                    <label for="experienceService">체험단 서비스내역:</label>
+                    <label for="experienceService">체험단 서비스내역</label>
                     <input type="text" id="experienceService" name="experienceService" class="calculated" readonly>
                 </div>
 
                 <div class="row">
                     <div class="col">
-                        <label for="deliveryAmount">배민포장 금액:</label>
+                        <label for="deliveryAmount">배민포장 금액</label>
                         <input type="number" id="deliveryAmount" name="deliveryAmount" placeholder="0" oninput="handleDeliveryAmountChange()">
                     </div>
                     <div class="col">
-                        <label for="deliveryCount">배민포장 횟수:</label>
+                        <label for="deliveryCount">배민포장 횟수</label>
                         <input type="number" id="deliveryCount" name="deliveryCount" placeholder="0" oninput="handleDeliveryCountChange()">
                     </div>
                 </div>
 
                 <div class="form-group">
-                    <label for="delivery">배민포장:</label>
+                    <label for="delivery">배민포장</label>
                     <input type="text" id="delivery" name="delivery" class="calculated" readonly>
                 </div>
             </div>
 
             <div class="section">
-                <h3>현금 계산</h3>
+                <h3>현금 계산<span class="help-tooltip" data-help="현금 관리와 계산을 위한 섹션입니다."></span></h3>
                 <div class="form-group">
-                    <label for="currentCash">현재시재:</label>
-                    <input type="number" id="currentCash" name="currentCash" placeholder="0" oninput="calculateCashNeeded()">
+                    <label for="currentCash">현재시재<span class="help-tooltip" data-help="돈봉투를 제외한 포스기 현금입니다."></span></label>
+                    <input type="number" id="currentCash" name="currentCash" placeholder="0" min="0" oninput="calculateCashNeeded()">
                 </div>
 
                 <div class="form-group">
-                    <label for="targetCash">목표시재:</label>
-                    <input type="number" id="targetCash" name="targetCash" placeholder="100,000" value="100000" oninput="calculateCashNeeded()">
+                    <label for="targetCash">목표시재<span class="help-tooltip" data-help="목표로 하는 시재 금액입니다."></span></label>
+                    <input type="number" id="targetCash" name="targetCash" placeholder="100,000" value="100000" min="0" oninput="calculateCashNeeded()">
                 </div>
 
                 <div class="form-group">
-                    <label for="cashEnvelope">현금총액 (돈봉투):</label>
-                    <input type="number" id="cashEnvelope" name="cashEnvelope" placeholder="0" oninput="calculateCashNeeded()">
+                    <label for="cashEnvelope">돈봉투 금액<span class="help-tooltip" data-help="돈봉투에 들어있는 현금입니다."></span></label>
+                    <input type="number" id="cashEnvelope" name="cashEnvelope" placeholder="0" min="0" oninput="calculateCashNeeded()">
                 </div>
 
                 <div class="form-group">
-                    <label for="cashDeposit">필요 현금입금액:</label>
+                    <label for="cashTotal">현금총액<span class="help-tooltip" data-help="현재시재 + 돈봉투 금액의 합계입니다."></span></label>
+                    <input type="number" id="cashTotal" name="cashTotal" class="calculated" readonly>
+                </div>
+
+                <div class="form-group">
+                    <label for="cashDeposit">필요 현금입금액<span class="help-tooltip" data-help="목표시재를 맞추기 위해 필요한 금액입니다."></span></label>
                     <input type="number" id="cashDeposit" name="cashDeposit" class="calculated" readonly>
                 </div>
 
                 <div class="form-group">
-                    <label for="cashAdjustment">돈봉투 증감량:</label>
+                    <label for="cashAdjustment">돈봉투 증감량<span class="help-tooltip" data-help="돈봉투에서 사용하거나 추가할 금액입니다."></span></label>
                     <input type="number" id="cashAdjustment" name="cashAdjustment" class="calculated" readonly>
                 </div>
 
                 <div class="form-group">
-                    <label for="finalCashEnvelope">최종 돈봉투 금액:</label>
+                    <label for="finalCashEnvelope">최종 돈봉투 금액<span class="help-tooltip" data-help="계산 후 돈봉투에 남을 금액입니다."></span></label>
                     <input type="number" id="finalCashEnvelope" name="finalCashEnvelope" class="calculated" readonly>
                 </div>
 
                 <div class="form-group">
-                    <label for="cashCalculation">현금 계산:</label>
+                    <label for="cashCalculation">현금 계산<span class="help-tooltip" data-help="현금 계산 과정을 보여줍니다."></span></label>
                     <input type="text" id="cashCalculation" name="cashCalculation" class="calculated" readonly>
                 </div>
             </div>
 
             <div class="section">
-                <h3>통장 관리</h3>
+                <h3>통장 관리<span class="help-tooltip" data-help="은행에서 통장입금 시 사용합니다."></span></h3>
                 <div class="form-group">
-                    <label for="bankAccount">통장 잔액:</label>
+                    <label for="bankAccount">통장 잔액</label>
                     <input type="number" id="bankAccount" name="bankAccount" placeholder="0" class="calculated">
                 </div>
                 
                 <div class="row">
                     <div class="col">
-                        <label for="bankAdjustment">증감 금액:</label>
+                        <label for="bankAdjustment">증감 금액</label>
                         <input type="number" id="bankAdjustment" name="bankAdjustment" placeholder="0">
                     </div>
                     <div class="col">
@@ -441,6 +524,7 @@
                 }, 300);
             }, 3000);
         }
+
         // 오늘 날짜를 기본값으로 설정
         document.addEventListener('DOMContentLoaded', function() {
             // 이전 입력값 불러오기 (날짜 설정 전에)
@@ -482,12 +566,7 @@
             // 매출 정보
             'monthlyTotal': 'mt',
             
-            // 시재 정보
-            'todayCash': 'tc',
-            'tomorrowCash': 'tm',
-            
-            // 현금 계산
-            'currentCash': 'cc',
+            // 현금 계산 (현재시재는 제외)
             'targetCash': 'tg',
             'cashEnvelope': 'ce',
             
@@ -508,13 +587,11 @@
                 'service', 'refund', 'refundDetail', 'review', 'revisit',
                 'experienceAmount', 'experienceCount', 'deliveryAmount', 'deliveryCount',
                 'date', 'shortageAmount', 'transferCount', 'cash', 'card', 
-                'expenseCard', 'expenseCash'
+                'expenseCard', 'expenseCash', 'currentCash', 'todayCash', 'tomorrowCash'
             ];
             
             // 기본값이 있는 필드들 (이 필드들은 기본값과 다를 때만 저장)
             const defaultValues = {
-                'todayCash': '100000',
-                'tomorrowCash': '100000',
                 'targetCash': '100000'
             };
             
@@ -695,7 +772,7 @@
                 'service', 'refund', 'refundDetail', 'review', 'revisit',
                 'experienceAmount', 'experienceCount', 'deliveryAmount', 'deliveryCount',
                 'date', 'shortageAmount', 'transferCount', 'cash', 'card', 
-                'expenseCard', 'expenseCash', 'reportInput'
+                'expenseCard', 'expenseCash', 'currentCash', 'reportInput', 'todayCash', 'tomorrowCash'
             ];
             
             inputs.forEach(input => {
@@ -959,22 +1036,56 @@
 
             // 현금 계산
             calculateCashNeeded: () => {
-                const currentCash = FormUtils.getNumberValue('currentCash');
+                let currentCash = FormUtils.getNumberValue('currentCash');
                 const targetCash = FormUtils.getNumberValue('targetCash') || 100000;
-                const cashEnvelope = FormUtils.getNumberValue('cashEnvelope');
+                let cashEnvelope = FormUtils.getNumberValue('cashEnvelope');
+                
+                // 현재시재가 음수가 되지 않도록 제한
+                if (currentCash < 0) {
+                    currentCash = 0;
+                    FormUtils.setValue('currentCash', 0);
+                }
+                
+                // 돈봉투금액이 음수가 되지 않도록 제한
+                if (cashEnvelope < 0) {
+                    cashEnvelope = 0;
+                    FormUtils.setValue('cashEnvelope', 0);
+                }
+                
+                // 현금총액 = 현재시재 + 돈봉투금액
+                const cashTotal = currentCash + cashEnvelope;
+                FormUtils.setValue('cashTotal', cashTotal);
                 
                 const neededCash = targetCash - currentCash;
                 const cashAdjustment = -neededCash;
-                const finalCashEnvelope = cashEnvelope - neededCash;
+                let finalCashEnvelope = cashEnvelope - neededCash;
                 
-                FormUtils.setValue('cashDeposit', neededCash);
-                FormUtils.setValue('cashAdjustment', cashAdjustment);
+                // 최종 돈봉투 금액이 음수가 되지 않도록 제한
+                if (finalCashEnvelope < 0) {
+                    finalCashEnvelope = 0;
+                    const adjustedNeededCash = cashEnvelope; // 돈봉투에서 가져올 수 있는 최대 금액
+                    const remainingNeeded = neededCash - adjustedNeededCash;
+                    
+                    FormUtils.setValue('cashDeposit', remainingNeeded > 0 ? remainingNeeded : 0);
+                    FormUtils.setValue('cashAdjustment', -adjustedNeededCash);
+                } else {
+                    FormUtils.setValue('cashDeposit', neededCash);
+                    FormUtils.setValue('cashAdjustment', cashAdjustment);
+                }
+                
                 FormUtils.setValue('finalCashEnvelope', finalCashEnvelope);
                 
                 // 계산식 표시
-                const calculationText = neededCash >= 0 
-                    ? `돈봉투 ${FormUtils.formatNumber(cashEnvelope)}원 - ${FormUtils.formatNumber(neededCash)}원 = ${FormUtils.formatNumber(finalCashEnvelope)}원`
-                    : `돈봉투 ${FormUtils.formatNumber(cashEnvelope)}원 + ${FormUtils.formatNumber(Math.abs(neededCash))}원 = ${FormUtils.formatNumber(finalCashEnvelope)}원`;
+                let calculationText;
+                if (finalCashEnvelope === 0 && neededCash > cashEnvelope) {
+                    const usedFromEnvelope = cashEnvelope;
+                    const remainingNeeded = neededCash - usedFromEnvelope;
+                    calculationText = `돈봉투 ${FormUtils.formatNumber(cashEnvelope)}원 전액 사용 + 추가 입금 ${FormUtils.formatNumber(remainingNeeded)}원 필요`;
+                } else if (neededCash >= 0) {
+                    calculationText = `돈봉투 ${FormUtils.formatNumber(cashEnvelope)}원 - ${FormUtils.formatNumber(neededCash)}원 = ${FormUtils.formatNumber(finalCashEnvelope)}원`;
+                } else {
+                    calculationText = `돈봉투 ${FormUtils.formatNumber(cashEnvelope)}원 + ${FormUtils.formatNumber(Math.abs(neededCash))}원 = ${FormUtils.formatNumber(finalCashEnvelope)}원`;
+                }
                 
                 FormUtils.setValue('cashCalculation', calculationText);
             }
@@ -1066,7 +1177,8 @@
                     { regex: /현금\s*:\s*([\d,]+)원/, id: 'expenseCash' },
                     { regex: /리뷰:\s*(\d+)팀/, id: 'review' },
                     { regex: /재방문:\s*(\d+)팀/, id: 'revisit' },
-                    { regex: /현금총액\(돈봉투\):\s*([\d,]+)원/, id: 'cashEnvelope' },
+                    { regex: /현금총액:\s*([\d,]+)원/, id: 'cashTotal' },
+                    { regex: /돈봉투:\s*([\d,]+)원/, id: 'cashEnvelope' },
                     { regex: /통장:\s*([\d,]+)원/, id: 'bankAccount' }
                 ];
 
@@ -1151,7 +1263,8 @@
 체험단 서비스내역: ${data.experienceService || defaults.experienceService}
 재방문: ${data.revisit || defaults.revisit}팀
 배민포장: ${data.delivery || defaults.delivery}
-현금총액(돈봉투): ${FormUtils.formatNumber(FormUtils.parseNumber(data.finalCashEnvelope) || FormUtils.parseNumber(data.cashEnvelope))}원
+현금총액: ${FormUtils.formatNumber(FormUtils.parseNumber(data.cashTotal))}원
+돈봉투: ${FormUtils.formatNumber(FormUtils.parseNumber(data.finalCashEnvelope) || FormUtils.parseNumber(data.cashEnvelope))}원
 통장: ${FormUtils.formatNumber(FormUtils.parseNumber(data.bankAccount))}원`;
 
                 document.getElementById('reportContent').textContent = report;
@@ -1218,7 +1331,7 @@
                 'service': '0', 'refund': '0', 'todayCash': '100000', 'tomorrowCash': '100000',
                 'expenseCard': '0', 'expenseCash': '0', 'shortageAmount': '0', 'transferCount': '0',
                 'experienceAmount': '0', 'experienceCount': '0', 'deliveryCount': '0', 'deliveryAmount': '0',
-                'targetCash': '100000', 'currentCash': '0', 'cashEnvelope': '0',
+                'targetCash': '100000', 'cashEnvelope': '0',
                 'bankAccount': '0', 'bankAdjustment': '0', 'reportInput': ''
             };
             
