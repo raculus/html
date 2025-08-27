@@ -276,8 +276,8 @@ function generateReportUrl() {
     const totalExpense = cardExpense + cashExpense;
     const adjustedTotalSales = totalSales - returnAmount;
     
-    // 모든 데이터를 하나의 객체로 압축
-    const reportData = {
+    // 모든 데이터를 하나의 객체로 압축 (0 값과 빈 문자열 제외)
+    const rawData = {
         date: dateStr,
         day: dayStr,
         totalSales: totalSales,
@@ -307,6 +307,18 @@ function generateReportUrl() {
         currentCash: currentCash,
         bankBalance: bankBalance
     };
+    
+    // 0 값과 빈 문자열을 제외한 데이터만 포함
+    const reportData = {};
+    Object.keys(rawData).forEach(key => {
+        const value = rawData[key];
+        // 문자열인 경우 빈 문자열이 아닌 경우만, 숫자인 경우 0이 아닌 경우만 포함
+        if ((typeof value === 'string' && value !== '' && value !== '0원') || 
+            (typeof value === 'number' && value !== 0) ||
+            key === 'date' || key === 'day') { // 날짜와 요일은 항상 포함
+            reportData[key] = value;
+        }
+    });
     
     // JSON을 Base64로 인코딩하여 압축
     const compressedData = btoa(unescape(encodeURIComponent(JSON.stringify(reportData))));

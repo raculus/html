@@ -139,15 +139,72 @@
             document.body.removeChild(textArea);
         }
 
+        // 압축된 데이터 해제 함수
+        function decompressReportData() {
+            const urlParams = new URLSearchParams(window.location.search);
+            const compressedData = urlParams.get('data');
+            
+            if (!compressedData) {
+                return null;
+            }
+            
+            try {
+                // Base64 디코딩 후 JSON 파싱
+                const decodedData = decodeURIComponent(escape(atob(decodeURIComponent(compressedData))));
+                return JSON.parse(decodedData);
+            } catch (error) {
+                console.error('데이터 압축 해제 실패:', error);
+                return null;
+            }
+        }
+
+        // 안전한 값 가져오기 (없으면 0 또는 기본값 반환)
+        function safeGet(data, key, defaultValue = 0) {
+            return data && data[key] !== undefined ? data[key] : defaultValue;
+        }
+
         // URL 파라미터에서 정산서 데이터 가져오기
         function loadReportData() {
-            const params = new URLSearchParams(window.location.search);
+            // 먼저 압축된 데이터를 시도
+            let data = decompressReportData();
             
-            const report = `${params.get('date')} ${params.get('day')} 미례국밥 전포점
+            if (data) {
+                // 압축된 데이터 사용 (빠진 값은 0으로 처리)
+                const report = `${safeGet(data, 'date', '날짜 없음')} ${safeGet(data, 'day', '')} 미례국밥 전포점
+총매출: ${formatNumber(safeGet(data, 'totalSales'))}원
+ 현금:  ${formatNumber(safeGet(data, 'cashSales'))}원
+ 카드:  ${formatNumber(safeGet(data, 'cardSales'))}원
+서비스: ${formatNumber(safeGet(data, 'serviceAmount'))}원(${safeGet(data, 'serviceCount')}건)
+ 반품액: ${formatNumber(safeGet(data, 'returnAmount'))}원
+ 매출합계: ${formatNumber(safeGet(data, 'adjustedTotalSales'))}원
+반품상세내역: ${safeGet(data, 'returnDetails', formatNumber(safeGet(data, 'returnAmount')) + '원')}
+월누적매출: ${formatNumber(safeGet(data, 'monthlyTotal'))}원
+월 매출총액: ${formatNumber(safeGet(data, 'monthlyDataAmount'))}원
+금일시제: ${formatNumber(safeGet(data, 'todayCash'))}원
+익일시제: ${formatNumber(safeGet(data, 'nextDayCash'))}원
+지출상세내역
+  카드 : ${formatNumber(safeGet(data, 'cardExpense'))}원
+  현금 : ${formatNumber(safeGet(data, 'cashExpense'))}원
+  total: ${formatNumber(safeGet(data, 'totalExpense'))}원
+과부족:  ${formatNumber(safeGet(data, 'lossAmount'))}원(${safeGet(data, 'lossCount')}건)
+리뷰: ${safeGet(data, 'reviewCount')}팀
+체험단: ${formatNumber(safeGet(data, 'experienceAmount'))}원(${safeGet(data, 'experienceCount')}건)
+재방문: ${safeGet(data, 'revisitCount')}팀
+배민포장: ${safeGet(data, 'deliveryCount')}회(${formatNumber(safeGet(data, 'deliveryAmount'))}원)
+현금총액: ${formatNumber(safeGet(data, 'currentCash') + safeGet(data, 'cashTotal'))}원
+돈봉투: ${formatNumber(safeGet(data, 'cashTotal'))}원
+통장: ${formatNumber(safeGet(data, 'bankBalance'))}원`;
+
+                document.getElementById('reportContent').textContent = report;
+            } else {
+                // 기존 URL 파라미터 방식 (하위 호환성)
+                const params = new URLSearchParams(window.location.search);
+                
+                const report = `${params.get('date') || '날짜 없음'} ${params.get('day') || ''} 미례국밥 전포점
 총매출: ${formatNumber(params.get('totalSales'))}원
  현금:  ${formatNumber(params.get('cashSales'))}원
  카드:  ${formatNumber(params.get('cardSales'))}원
-서비스: ${formatNumber(params.get('serviceAmount'))}원(${params.get('serviceCount')}건)
+서비스: ${formatNumber(params.get('serviceAmount'))}원(${params.get('serviceCount') || 0}건)
  반품액: ${formatNumber(params.get('returnAmount'))}원
  매출합계: ${formatNumber(params.get('adjustedTotalSales'))}원
 반품상세내역: ${params.get('returnDetails') || formatNumber(params.get('returnAmount')) + '원'}
@@ -159,16 +216,17 @@
   카드 : ${formatNumber(params.get('cardExpense'))}원
   현금 : ${formatNumber(params.get('cashExpense'))}원
   total: ${formatNumber(params.get('totalExpense'))}원
-과부족:  ${formatNumber(params.get('lossAmount'))}원(${params.get('lossCount')}건)
-리뷰: ${params.get('reviewCount')}팀
-체험단: ${formatNumber(params.get('experienceAmount'))}원(${params.get('experienceCount')}건)
-재방문: ${params.get('revisitCount')}팀
-배민포장: ${params.get('deliveryCount')}회(${formatNumber(params.get('deliveryAmount'))}원)
-현금총액: ${formatNumber(parseInt(params.get('currentCash')) + parseInt(params.get('cashTotal')))}원
+과부족:  ${formatNumber(params.get('lossAmount'))}원(${params.get('lossCount') || 0}건)
+리뷰: ${params.get('reviewCount') || 0}팀
+체험단: ${formatNumber(params.get('experienceAmount'))}원(${params.get('experienceCount') || 0}건)
+재방문: ${params.get('revisitCount') || 0}팀
+배민포장: ${params.get('deliveryCount') || 0}회(${formatNumber(params.get('deliveryAmount'))}원)
+현금총액: ${formatNumber((parseInt(params.get('currentCash')) || 0) + (parseInt(params.get('cashTotal')) || 0))}원
 돈봉투: ${formatNumber(params.get('cashTotal'))}원
 통장: ${formatNumber(params.get('bankBalance'))}원`;
 
-            document.getElementById('reportContent').textContent = report;
+                document.getElementById('reportContent').textContent = report;
+            }
         }
 
         // 페이지 로드 시 정산서 데이터 로드
