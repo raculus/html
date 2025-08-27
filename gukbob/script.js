@@ -1,3 +1,22 @@
+// 압축된 데이터 해제 함수
+function decompressReportData() {
+    const urlParams = new URLSearchParams(window.location.search);
+    const compressedData = urlParams.get('data');
+    
+    if (!compressedData) {
+        return null;
+    }
+    
+    try {
+        // Base64 디코딩 후 JSON 파싱
+        const decodedData = decodeURIComponent(escape(atob(decodeURIComponent(compressedData))));
+        return JSON.parse(decodedData);
+    } catch (error) {
+        console.error('데이터 압축 해제 실패:', error);
+        return null;
+    }
+}
+
 // URL 파라미터 파싱
 function getUrlParams() {
     const params = new URLSearchParams(window.location.search);
@@ -175,8 +194,28 @@ function displayData() {
     container.innerHTML = html;
 }
 
-// 정산서 생성
-function generateReport() {
+function generateQRCode() {
+    const url = generateReportUrl();
+    console.log('Generated URL:', url);
+    var svgNode = QRCode({
+     msg :  `${url}`
+    ,dim :   300
+    ,pad :   6
+    ,mtx :   7
+    ,ecl :  "H"
+    ,ecb :   0
+    ,pal : ["#000000", "#f2f4f8"]
+    ,vrb :   1
+    });
+
+    document.getElementById("qrcode-svg").appendChild(svgNode);
+}
+
+function generateReportUrl() {
+    // 현재 URL을 참고하여 기본 URL 생성
+    const currentUrl = new URL(window.location.href);
+    const baseUrl = `${currentUrl.protocol}//${currentUrl.host}${currentUrl.pathname.replace(/[^/]*$/, '')}report.html`;
+    
     const params = getUrlParams();
     const now = new Date();
     const dateStr = now.getFullYear() + '년 ' + 
@@ -237,8 +276,8 @@ function generateReport() {
     const totalExpense = cardExpense + cashExpense;
     const adjustedTotalSales = totalSales - returnAmount;
     
-    // GET 파라미터로 새 페이지 열기
-    const reportParams = new URLSearchParams({
+    // 모든 데이터를 하나의 객체로 압축
+    const reportData = {
         date: dateStr,
         day: dayStr,
         totalSales: totalSales,
@@ -267,10 +306,12 @@ function generateReport() {
         cashTotal: cashTotal,
         currentCash: currentCash,
         bankBalance: bankBalance
-    });
+    };
     
-    // 새 창에서 정산서 페이지 열기
-    window.open(`report.html?${reportParams.toString()}`, '_blank');
+    // JSON을 Base64로 인코딩하여 압축
+    const compressedData = btoa(unescape(encodeURIComponent(JSON.stringify(reportData))));
+    
+    return `${baseUrl}?data=${encodeURIComponent(compressedData)}`;
 }
 
 // 페이지 로드 시 데이터 표시

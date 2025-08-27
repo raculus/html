@@ -1,6 +1,6 @@
 <!DOCTYPE html>
 <html lang="ko">
-<            <div class="input-row">
+            <div class="input-row">
                 <span class="input-label">서비스 건수:</span>
                 <input type="number" class="count-input" id="serviceCount" min="0" value="0" onchange="updateSummary()">
                 <span class="input-unit">건</span>
@@ -24,7 +24,7 @@
                 <span class="input-label">월누적매출:</span>
                 <input type="number" class="amount-input" id="monthlyTotal" min="0" value="0" onchange="updateSummary()">
                 <span class="input-unit">원</span>
-            </div>a charset="UTF-8">
+            </div>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>판매 데이터 조회</title>
     <link rel="stylesheet" href="style.css">
@@ -186,13 +186,13 @@
         <div class="output-section">
             <h2>마감정산서</h2>
             <button onclick="generateQRCode()" class="generate-btn">정산서 QR 코드 생성</button>
-            <div id="qrcode-container" style="text-align: center; margin-top: 20px; display: none;">
-                <div id="qrcode"></div>
-                <p style="margin-top: 10px; font-size: 14px; color: #666;">QR 코드를 스캔하여 정산서를 확인하세요</p>
+            <div id="qrcode">
+                <svg id="qrcode-svg" width="300" height="300"></svg>
             </div>
         </div>
     </div>
 
     <script src="script.js"></script>
+    <script type="text/javascript" src="qrcode.min.js"></script>
 </body>
 </html>

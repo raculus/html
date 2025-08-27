@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>마감정산서</title>
+    <style>
+        body {
+            font-family: 'Courier New', monospace;
+            margin: 20px;
+            background-color: #f5f5f5;
+            line-height: 1.4;
+        }
+        .container {
+            max-width: 600px;
+            margin: 0 auto;
+            background-color: white;
+            padding: 30px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        .report-header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        .report-content {
+            white-space: pre-line;
+            font-size: 14px;
+            line-height: 1.6;
+            background-color: #f8f9fa;
+            padding: 20px;
+            border-radius: 5px;
+            border: 1px solid #dee2e6;
+        }
+        .print-btn {
+            background-color: #007bff;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+            margin-top: 20px;
+            display: block;
+            margin-left: auto;
+            margin-right: auto;
+            transition: background-color 0.3s ease;
+        }
+        .print-btn:hover {
+            background-color: #0056b3;
+        }
+        @media print {
+            body {
+                margin: 0;
+                background-color: white;
+            }
+            .container {
+                box-shadow: none;
+                margin: 0;
+                padding: 20px;
+            }
+            .print-btn {
+                display: none;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="report-content" id="reportContent">
+            <!-- 정산서 내용이 여기에 표시됩니다 -->
+        </div>
+        <button class="print-btn" onclick="copyReport()">복사하기</button>
+    </div>
+
+    <script>
+        // 숫자 포맷팅 (천단위 콤마)
+        function formatNumber(num) {
+            if (!num || num === 'null' || num === 'undefined') return '0';
+            return parseInt(num).toLocaleString('ko-KR');
+        }
+
+        // 정산서 복사 기능
+        function copyReport() {
+            const reportContent = document.getElementById('reportContent').textContent;
+            
+            // 클립보드에 복사
+            navigator.clipboard.writeText(reportContent).then(function() {
+                // 성공 시 버튼 텍스트 변경
+                const button = document.querySelector('.print-btn');
+                const originalText = button.textContent;
+                button.textContent = '복사 완료!';
+                button.style.backgroundColor = '#28a745';
+                
+                // 2초 후 원래 텍스트로 되돌리기
+                setTimeout(function() {
+                    button.textContent = originalText;
+                    button.style.backgroundColor = '#007bff';
+                }, 2000);
+            }).catch(function(err) {
+                // 실패 시 대안 방법 사용
+                fallbackCopyTextToClipboard(reportContent);
+            });
+        }
+
+        // 클립보드 API를 지원하지 않는 브라우저를 위한 대안
+        function fallbackCopyTextToClipboard(text) {
+            const textArea = document.createElement("textarea");
+            textArea.value = text;
+            
+            // 화면에 보이지 않게 설정
+            textArea.style.top = "0";
+            textArea.style.left = "0";
+            textArea.style.position = "fixed";
+            
+            document.body.appendChild(textArea);
+            textArea.focus();
+            textArea.select();
+            
+            try {
+                const successful = document.execCommand('copy');
+                if (successful) {
+                    const button = document.querySelector('.print-btn');
+                    const originalText = button.textContent;
+                    button.textContent = '복사 완료!';
+                    button.style.backgroundColor = '#28a745';
+                    
+                    setTimeout(function() {
+                        button.textContent = originalText;
+                        button.style.backgroundColor = '#007bff';
+                    }, 2000);
+                } else {
+                    alert('복사에 실패했습니다. 수동으로 선택하여 복사해주세요.');
+                }
+            } catch (err) {
+                alert('복사에 실패했습니다. 수동으로 선택하여 복사해주세요.');
+            }
+            
+            document.body.removeChild(textArea);
+        }
+
+        // URL 파라미터에서 정산서 데이터 가져오기
+        function loadReportData() {
+            const params = new URLSearchParams(window.location.search);
+            
+            const report = `${params.get('date')} ${params.get('day')} 미례국밥 전포점
+총매출: ${formatNumber(params.get('totalSales'))}원
+ 현금:  ${formatNumber(params.get('cashSales'))}원
+ 카드:  ${formatNumber(params.get('cardSales'))}원
+서비스: ${formatNumber(params.get('serviceAmount'))}원(${params.get('serviceCount')}건)
+ 반품액: ${formatNumber(params.get('returnAmount'))}원
+ 매출합계: ${formatNumber(params.get('adjustedTotalSales'))}원
+반품상세내역: ${params.get('returnDetails') || formatNumber(params.get('returnAmount')) + '원'}
+월누적매출: ${formatNumber(params.get('monthlyTotal'))}원
+월 매출총액: ${formatNumber(params.get('monthlyDataAmount'))}원
+금일시제: ${formatNumber(params.get('todayCash'))}원
+익일시제: ${formatNumber(params.get('nextDayCash'))}원
+지출상세내역
+  카드 : ${formatNumber(params.get('cardExpense'))}원
+  현금 : ${formatNumber(params.get('cashExpense'))}원
+  total: ${formatNumber(params.get('totalExpense'))}원
+과부족:  ${formatNumber(params.get('lossAmount'))}원(${params.get('lossCount')}건)
+리뷰: ${params.get('reviewCount')}팀
+체험단: ${formatNumber(params.get('experienceAmount'))}원(${params.get('experienceCount')}건)
+재방문: ${params.get('revisitCount')}팀
+배민포장: ${params.get('deliveryCount')}회(${formatNumber(params.get('deliveryAmount'))}원)
+현금총액: ${formatNumber(parseInt(params.get('currentCash')) + parseInt(params.get('cashTotal')))}원
+돈봉투: ${formatNumber(params.get('cashTotal'))}원
+통장: ${formatNumber(params.get('bankBalance'))}원`;
+
+            document.getElementById('reportContent').textContent = report;
+        }
+
+        // 페이지 로드 시 정산서 데이터 로드
+        window.onload = function() {
+            loadReportData();
+        };
+    </script>
+</body>
+</html>
