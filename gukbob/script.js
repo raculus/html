@@ -209,6 +209,9 @@ function generateQRCode() {
     });
 
     document.getElementById("qrcode-svg").appendChild(svgNode);
+    svgNode.onclick = () => {
+        window.open(url, '_blank');
+    };
 }
 
 function generateReportUrl() {
