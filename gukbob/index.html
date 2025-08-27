@@ -1,0 +1,198 @@
+<!DOCTYPE html>
+<html lang="ko">
+<            <div class="input-row">
+                <span class="input-label">서비스 건수:</span>
+                <input type="number" class="count-input" id="serviceCount" min="0" value="0" onchange="updateSummary()">
+                <span class="input-unit">건</span>
+            </div>
+            <div class="input-row">
+                <span class="input-label">체험단 금액:</span>
+                <input type="number" class="amount-input" id="experienceAmount" min="0" value="0" onchange="updateSummary()">
+                <span class="input-unit">원</span>
+            </div>
+            <div class="input-row">
+                <span class="input-label">체험단 건수:</span>
+                <input type="number" class="count-input" id="experienceCount" min="0" value="0" onchange="updateSummary()">
+                <span class="input-unit">건</span>
+            </div>
+            <div class="input-row">
+                <span class="input-label">서비스 금액:</span>
+                <input type="number" class="amount-input" id="serviceAmount" min="0" value="0" onchange="updateSummary()">
+                <span class="input-unit">원</span>
+            </div>
+            <div class="input-row">
+                <span class="input-label">월누적매출:</span>
+                <input type="number" class="amount-input" id="monthlyTotal" min="0" value="0" onchange="updateSummary()">
+                <span class="input-unit">원</span>
+            </div>a charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>판매 데이터 조회</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="container">
+        <h1>마감정산</h1>
+        <div class="input-section">
+            <h2>불러온 정보</h2>
+            <div id="dataContainer">
+                <div class="no-data">데이터를 로딩 중...</div>
+            </div>
+        </div>
+
+
+        <div class="input-section">
+            <h2>수기 입력</h2>
+            <div class="input-row">
+                <span class="input-label">과부족 건수:</span>
+                <input type="number" class="count-input" id="lossCount" min="0" value="0" onchange="updateSummary()">
+                <span class="input-unit">건</span>
+            </div>
+            <div class="input-row">
+                <span class="input-label">서비스 금액:</span>
+                <input type="number" class="count-input" id="serviceAmount" min="0" value="0" onchange="updateSummary()">
+                <span class="input-unit">원</span>
+            </div>
+            <div class="input-row">
+                <span class="input-label">서비스 건수:</span>
+                <input type="number" class="count-input" id="serviceCount" min="0" value="0" onchange="updateSummary()">
+                <span class="input-unit">건</span>
+            </div>
+            <div class="input-row">
+                <span class="input-label">체험단 금액:</span>
+                <input type="number" class="count-input" id="experienceAmount" min="0" value="0" onchange="updateSummary()">
+                <span class="input-unit">원</span>
+            </div>
+            <div class="input-row">
+                <span class="input-label">체험단 건수:</span>
+                <input type="number" class="count-input" id="experienceCount" min="0" value="0" onchange="updateSummary()">
+                <span class="input-unit">건</span>
+            </div>
+            <div class="input-row">
+                <span class="input-label">월누적매출:</span>
+                <input type="number" class="amount-input" id="monthlyTotal" min="0" value="0" onchange="updateSummary()">
+                <span class="input-unit">원</span>
+            </div>
+            <div class="input-row">
+                <span class="input-label">반품액:</span>
+                <input type="number" class="amount-input" id="returnAmount" min="0" value="0" onchange="updateSummary()">
+                <span class="input-unit">원</span>
+            </div>
+            <div class="input-row">
+                <span class="input-label">반품 상세내역:</span>
+                <input type="text" class="text-input" id="returnDetails" value="" onchange="updateSummary()">
+            </div>
+            <div class="input-row">
+                <span class="input-label">금일 시재:</span>
+                <input type="number" class="amount-input" id="todayCash" min="0" value="100000" onchange="updateSummary()">
+                <span class="input-unit">원</span>
+            </div>
+            <div class="input-row">
+                <span class="input-label">익일 시재:</span>
+                <input type="number" class="amount-input" id="nextDayCash" min="0" value="100000" onchange="updateSummary()">
+                <span class="input-unit">원</span>
+            </div>
+            <div class="input-row">
+                <span class="input-label">카드 지출:</span>
+                <input type="number" class="amount-input" id="cardExpense" min="0" value="0" onchange="updateSummary()">
+                <span class="input-unit">원</span>
+            </div>
+            <div class="input-row">
+                <span class="input-label">현금 지출:</span>
+                <input type="number" class="amount-input" id="cashExpense" min="0" value="0" onchange="updateSummary()">
+                <span class="input-unit">원</span>
+            </div>
+            <div class="input-row">
+                <span class="input-label">재방문:</span>
+                <input type="number" class="count-input" id="revisitCount" min="0" value="0" onchange="updateSummary()">
+                <span class="input-unit">팀</span>
+            </div>
+            <div class="input-row">
+                <span class="input-label">배민포장 횟수:</span>
+                <input type="number" class="count-input" id="deliveryCount" min="0" value="0" onchange="updateSummary()">
+                <span class="input-unit">회</span>
+            </div>
+            <div class="input-row">
+                <span class="input-label">배민포장 금액:</span>
+                <input type="number" class="amount-input" id="deliveryAmount" min="0" value="0" onchange="updateSummary()">
+                <span class="input-unit">원</span>
+            </div>
+            <div class="input-row">
+                <span class="input-label">통장 잔액:</span>
+                <input type="number" class="amount-input" id="bankBalance" min="0" value="0" onchange="updateSummary()">
+                <span class="input-unit">원</span>
+            </div>
+            <div class="input-row">
+                <span class="input-label">리뷰:</span>
+                <input type="number" class="count-input" id="reviewCount" min="0" value="0" readonly>
+                <button onclick="loadReviewCount()" class="load-btn">불러오기</button>
+                <span class="input-unit">팀</span>
+            </div>
+        </div>
+
+        <div class="cash-counter">
+            <h2>돈봉투</h2>
+            <div class="cash-row">
+                <span class="cash-label">십만원</span>
+                <input type="number" class="cash-input" id="bill100000" min="0" value="0" onchange="calculateTotal()">
+                <span class="cash-amount" id="amount100000">0원</span>
+            </div>
+            <div class="cash-row">
+                <span class="cash-label">오만원</span>
+                <input type="number" class="cash-input" id="bill50000" min="0" value="0" onchange="calculateTotal()">
+                <span class="cash-amount" id="amount50000">0원</span>
+            </div>
+            <div class="cash-row">
+                <span class="cash-label">만원</span>
+                <input type="number" class="cash-input" id="bill10000" min="0" value="0" onchange="calculateTotal()">
+                <span class="cash-amount" id="amount10000">0원</span>
+            </div>
+            <div class="cash-row">
+                <span class="cash-label">오천원</span>
+                <input type="number" class="cash-input" id="bill5000" min="0" value="0" onchange="calculateTotal()">
+                <span class="cash-amount" id="amount5000">0원</span>
+            </div>
+            <div class="cash-row">
+                <span class="cash-label">천원</span>
+                <input type="number" class="cash-input" id="bill1000" min="0" value="0" onchange="calculateTotal()">
+                <span class="cash-amount" id="amount1000">0원</span>
+            </div>
+            <div class="cash-row">
+                <span class="cash-label">오백원</span>
+                <input type="number" class="cash-input" id="coin500" min="0" value="0" onchange="calculateTotal()">
+                <span class="cash-amount" id="amount500">0원</span>
+            </div>
+            <div class="cash-row">
+                <span class="cash-label">백원</span>
+                <input type="number" class="cash-input" id="coin100" min="0" value="0" onchange="calculateTotal()">
+                <span class="cash-amount" id="amount100">0원</span>
+            </div>
+            <div class="cash-row">
+                <span class="cash-label">오십원</span>
+                <input type="number" class="cash-input" id="coin50" min="0" value="0" onchange="calculateTotal()">
+                <span class="cash-amount" id="amount50">0원</span>
+            </div>
+            <div class="cash-row">
+                <span class="cash-label">십원</span>
+                <input type="number" class="cash-input" id="coin10" min="0" value="0" onchange="calculateTotal()">
+                <span class="cash-amount" id="amount10">0원</span>
+            </div>
+            <div class="cash-row total-row">
+                <span class="cash-label">총 금액</span>
+                <span></span>
+                <span class="cash-amount" id="totalAmount">0원</span>
+            </div>
+        </div>
+
+        <div class="output-section">
+            <h2>마감정산서</h2>
+            <button onclick="generateQRCode()" class="generate-btn">정산서 QR 코드 생성</button>
+            <div id="qrcode-container" style="text-align: center; margin-top: 20px; display: none;">
+                <div id="qrcode"></div>
+                <p style="margin-top: 10px; font-size: 14px; color: #666;">QR 코드를 스캔하여 정산서를 확인하세요</p>
+            </div>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>

@@ -1,0 +1,281 @@
+// URL 파라미터 파싱
+function getUrlParams() {
+    const params = new URLSearchParams(window.location.search);
+    return {
+        TOT_DC_AMT: params.get('TOT_DC_AMT'),        
+        TOTAL_SALE_AMT: parseInt(params.DCM_SALE_AMT) + parseInt(params.CASH_AMT),
+        POS_CSH_OUT_AMT: params.get('POS_CSH_OUT_AMT'),
+        TOT_REM_AMT: params.get('TOT_REM_AMT'),
+        LOSS_CASH_AMT: params.get('LOSS_CASH_AMT'),
+        DCM_SALE_AMT: params.get('DCM_SALE_AMT'),
+        CASH_AMT: params.get('CASH_AMT'),
+        monthly_data: params.get('monthly_data')
+    };
+}
+
+// TOT_DC_AMT를 체험단과 서비스로 분리하는 함수
+function separateExperienceAndService(totDcAmt) {
+    const amount = parseInt(totDcAmt) || 0;
+    
+    if (amount === 0) {
+        return {
+            experienceAmount: 0,
+            experienceCount: 0,
+            serviceAmount: 0,
+            serviceCount: 0
+        };
+    }
+    
+    // 25000으로 나누어떨어지면 체험단으로 분류
+    if (amount % 25000 === 0) {
+        return {
+            experienceAmount: amount,
+            experienceCount: amount / 25000,
+            serviceAmount: 0,
+            serviceCount: 0
+        };
+    } else {
+        // 나누어떨어지지 않으면 서비스로 분류
+        return {
+            experienceAmount: 0,
+            experienceCount: 0,
+            serviceAmount: amount,
+            serviceCount: 1
+        };
+    }
+}
+
+// 숫자 포맷팅 (천단위 콤마)
+function formatNumber(num) {
+    if (!num) return '0';
+    return parseInt(num).toLocaleString('ko-KR');
+}
+
+// 현금 계수 계산
+function calculateTotal() {
+    const denominations = [
+        { id: 'bill100000', value: 100000 },
+        { id: 'bill50000', value: 50000 },
+        { id: 'bill10000', value: 10000 },
+        { id: 'bill5000', value: 5000 },
+        { id: 'bill1000', value: 1000 },
+        { id: 'coin500', value: 500 },
+        { id: 'coin100', value: 100 },
+        { id: 'coin50', value: 50 },
+        { id: 'coin10', value: 10 }
+    ];
+
+    let total = 0;
+
+    denominations.forEach(denom => {
+        const count = parseInt(document.getElementById(denom.id).value) || 0;
+        const amount = count * denom.value;
+        total += amount;
+        
+        // 각 금종별 금액 표시
+        document.getElementById(`amount${denom.value}`).textContent = formatNumber(amount) + '원';
+    });
+
+    // 총 금액 표시
+    document.getElementById('totalAmount').textContent = formatNumber(total) + '원';
+    
+}
+
+// 리뷰 불러오기
+async function loadReviewCount() {
+    try {
+        // 현재 월.일 계산
+        const today = new Date();
+        const month = today.getMonth() + 1;
+        const day = today.getDate();
+        const monthDay = `${month}.${day}`;
+        
+        const apiUrl = `https://api.jaehy.uk/1688300738/count/${monthDay}`;
+        console.log('API 호출:', apiUrl);
+        
+        const response = await fetch(apiUrl);
+        
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        
+        const data = await response.text();
+        // data = API 응답: {"success":true,"placeId":"1688300738","targetDate":"8.10","count":0,"url":"https://m.place.naver.com/restaurant/1688300738/review/visitor?reviewSort=recent","extractedAt":"2025-08-09T19:26:51.652Z"}
+        const jsonData = JSON.parse(data);
+        const reviewCount = jsonData.count;
+
+        if (isNaN(reviewCount)) {
+            throw new Error('Invalid response data');
+        }
+        
+        document.getElementById('reviewCount').value = reviewCount;
+        console.log('리뷰 개수 로드 성공:', reviewCount);
+        
+    } catch (error) {
+        console.error('리뷰 개수 로드 실패:', error);
+        document.getElementById('reviewCount').value = 0;
+    }
+}
+
+// 데이터 표시
+function displayData() {
+    const params = getUrlParams();
+    const container = document.getElementById('dataContainer');
+    
+    // 파라미터가 있는지 확인
+    const hasData = Object.values(params).some(value => value !== null);
+    
+    if (!hasData) {
+        container.innerHTML = '<div class="no-data">URL 파라미터가 없습니다.</div>';
+        return;
+    }
+
+    // TOT_DC_AMT를 체험단과 서비스로 분리
+    const separated = separateExperienceAndService(params.TOT_DC_AMT);
+
+    const dataLabels = {
+        TOT_DC_AMT: '서비스 금액',
+        TOT_REM_AMT: '현재 시재',
+        LOSS_CASH_AMT: '과부족',
+        DCM_SALE_AMT: '카드 매출',
+        CASH_AMT: '현금 매출',
+        TOTAL_SALE_AMT: '금일 총 매출',
+        monthly_data: '월 매출총액',
+        POS_CSH_OUT_AMT: '지출'
+    };
+
+    let html = '';
+
+    
+    // 분리된 체험단/서비스 정보 표시
+    if (separated.experienceAmount > 0) {
+        document.getElementById('experienceAmount').value = separated.experienceAmount;
+        document.getElementById('experienceCount').value = separated.experienceCount;
+    }
+    
+    if (separated.serviceAmount > 0) {
+        document.getElementById('serviceAmount').value = separated.serviceAmount;
+        document.getElementById('serviceCount').value = separated.serviceCount;
+    }
+    
+    // 나머지 파라미터들 표시
+    for (const [key, value] of Object.entries(params)) {
+        if (value !== null) {
+            const isNegative = parseInt(value) < 0;
+            html += `
+            <div class="data-item">
+            <span class="label">${dataLabels[key]}:</span>
+            <span class="value ${isNegative ? 'negative' : ''}">${formatNumber(value)}원</span>
+            </div>
+            `;
+        }
+    }
+    
+    document.getElementById('monthlyTotal').value = parseInt(params.monthly_data) || 0;;
+    container.innerHTML = html;
+}
+
+// 정산서 생성
+function generateReport() {
+    const params = getUrlParams();
+    const now = new Date();
+    const dateStr = now.getFullYear() + '년 ' + 
+                   String(now.getMonth() + 1).padStart(2, '0') + '월 ' + 
+                   String(now.getDate()).padStart(2, '0') + '일';
+    
+    const weekdays = ['일', '월', '화', '수', '목', '금', '토'];
+    const dayStr = '(' + weekdays[now.getDay()] + ')';
+    
+    const cashSales = parseInt(params.CASH_AMT) || 0;
+    const cardSales = parseInt(params.DCM_SALE_AMT) || 0;
+    const totalSales = cashSales + cardSales;
+    const lossAmount = parseInt(params.LOSS_CASH_AMT) || 0;
+    const currentCash = parseInt(params.TOT_REM_AMT) || 0;
+    const monthlyDataAmount = parseInt(params.monthly_data) || 0;
+    
+    // TOT_DC_AMT를 체험단과 서비스로 분리
+    const separated = separateExperienceAndService(params.TOT_DC_AMT);
+    
+    // 입력된 값들 가져오기
+    const lossCount = parseInt(document.getElementById('lossCount').value) || 0;
+    const serviceCountInput = parseInt(document.getElementById('serviceCount').value) || 0;
+    const experienceCountInput = parseInt(document.getElementById('experienceCount').value) || 0;
+    const experienceAmountInput = parseInt(document.getElementById('experienceAmount').value) || 0;
+    const serviceAmountInput = parseInt(document.getElementById('serviceAmount').value) || 0;
+    const monthlyTotal = parseInt(document.getElementById('monthlyTotal').value) || 0;
+    const returnAmount = parseInt(document.getElementById('returnAmount').value) || 0;
+    const returnDetails = document.getElementById('returnDetails').value || '';
+    const todayCash = parseInt(document.getElementById('todayCash').value) || 0;
+    const nextDayCash = parseInt(document.getElementById('nextDayCash').value) || 0;
+    const cardExpense = parseInt(document.getElementById('cardExpense').value) || 0;
+    const cashExpense = parseInt(document.getElementById('cashExpense').value) || 0;
+    const revisitCount = parseInt(document.getElementById('revisitCount').value) || 0;
+    const deliveryCount = parseInt(document.getElementById('deliveryCount').value) || 0;
+    const deliveryAmount = parseInt(document.getElementById('deliveryAmount').value) || 0;
+    const bankBalance = parseInt(document.getElementById('bankBalance').value) || 0;
+    const reviewCount = parseInt(document.getElementById('reviewCount').value) || 0;
+    
+    // 현금 계수 총액 계산 (돈봉투)
+    const denominations = [
+        { id: 'bill100000', value: 100000 },
+        { id: 'bill50000', value: 50000 },
+        { id: 'bill10000', value: 10000 },
+        { id: 'bill5000', value: 5000 },
+        { id: 'bill1000', value: 1000 },
+        { id: 'coin500', value: 500 },
+        { id: 'coin100', value: 100 },
+        { id: 'coin50', value: 50 },
+        { id: 'coin10', value: 10 }
+    ];
+    
+    let cashTotal = 0;
+    denominations.forEach(denom => {
+        const count = parseInt(document.getElementById(denom.id).value) || 0;
+        cashTotal += count * denom.value;
+    });
+    
+    const totalExpense = cardExpense + cashExpense;
+    const adjustedTotalSales = totalSales - returnAmount;
+    
+    // GET 파라미터로 새 페이지 열기
+    const reportParams = new URLSearchParams({
+        date: dateStr,
+        day: dayStr,
+        totalSales: totalSales,
+        cashSales: cashSales,
+        cardSales: cardSales,
+        serviceAmount: serviceAmountInput || separated.serviceAmount,
+        serviceCount: serviceCountInput || separated.serviceCount,
+        experienceAmount: experienceAmountInput || separated.experienceAmount,
+        experienceCount: experienceCountInput || separated.experienceCount,
+        returnAmount: returnAmount,
+        returnDetails: returnDetails || formatNumber(returnAmount) + '원',
+        adjustedTotalSales: adjustedTotalSales,
+        monthlyTotal: monthlyTotal,
+        monthlyDataAmount: monthlyDataAmount,
+        todayCash: todayCash || currentCash,
+        nextDayCash: nextDayCash || currentCash,
+        cardExpense: cardExpense,
+        cashExpense: cashExpense,
+        totalExpense: totalExpense,
+        lossAmount: lossAmount,
+        lossCount: lossCount,
+        reviewCount: reviewCount,
+        revisitCount: revisitCount,
+        deliveryCount: deliveryCount,
+        deliveryAmount: deliveryAmount,
+        cashTotal: cashTotal,
+        currentCash: currentCash,
+        bankBalance: bankBalance
+    });
+    
+    // 새 창에서 정산서 페이지 열기
+    window.open(`report.html?${reportParams.toString()}`, '_blank');
+}
+
+// 페이지 로드 시 데이터 표시
+window.onload = function() {
+    displayData();
+    calculateTotal();
+    loadReviewCount();
+};

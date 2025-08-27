@@ -1,0 +1,248 @@
+body {
+    font-family: Arial, sans-serif;
+    margin: 20px;
+    background-color: #f5f5f5;
+}
+
+.container {
+    max-width: 600px;
+    margin: 0 auto;
+    background-color: white;
+    padding: 20px;
+    border-radius: 8px;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+}
+
+h1 {
+    color: #333;
+    text-align: center;
+    margin-bottom: 30px;
+}
+
+h2 {
+    color: #495057;
+    margin-top: 30px;
+    margin-bottom: 15px;
+    border-bottom: 2px solid #007bff;
+    padding-bottom: 5px;
+}
+
+.data-item {
+    display: flex;
+    justify-content: space-between;
+    padding: 10px;
+    margin: 5px 0;
+    background-color: #f8f9fa;
+    border-radius: 4px;
+    border-left: 4px solid #007bff;
+}
+
+.label {
+    font-weight: bold;
+    color: #495057;
+}
+
+.value {
+    color: #28a745;
+    font-weight: bold;
+}
+
+.negative {
+    color: #dc3545;
+}
+
+.no-data {
+    text-align: center;
+    color: #6c757d;
+    font-style: italic;
+    margin-top: 20px;
+}
+
+.cash-counter {
+    margin-top: 30px;
+    padding: 20px;
+    background-color: #e9ecef;
+    border-radius: 8px;
+}
+
+.cash-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin: 10px 0;
+    padding: 8px;
+    background-color: white;
+    border-radius: 4px;
+}
+
+.cash-label {
+    font-weight: bold;
+    color: #495057;
+    width: 80px;
+}
+
+.cash-input {
+    width: 60px;
+    padding: 5px;
+    border: 1px solid #ced4da;
+    border-radius: 4px;
+    text-align: center;
+}
+
+.cash-amount {
+    font-weight: bold;
+    color: #28a745;
+    width: 100px;
+    text-align: right;
+}
+
+.total-row {
+    border-top: 2px solid #007bff;
+    background-color: #007bff !important;
+    color: white;
+    font-weight: bold;
+    font-size: 1.1em;
+}
+
+.total-row .cash-label,
+.total-row .cash-amount {
+    color: white;
+}
+
+.summary-section {
+    margin-top: 30px;
+    padding: 20px;
+    background-color: #e8f4f8;
+    border-radius: 8px;
+}
+
+.summary-item {
+    display: flex;
+    justify-content: space-between;
+    margin: 10px 0;
+    padding: 8px;
+    background-color: white;
+    border-radius: 4px;
+}
+
+.summary-row {
+    display: flex;
+    gap: 10px;
+}
+
+.summary-row .summary-item {
+    flex: 1;
+}
+
+.summary-label {
+    font-weight: bold;
+    color: #495057;
+}
+
+.summary-value {
+    font-weight: bold;
+    color: #007bff;
+}
+
+.input-section {
+    margin-top: 30px;
+    padding: 20px;
+    background-color: #fff3cd;
+    border-radius: 8px;
+}
+
+.input-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin: 10px 0;
+    padding: 8px;
+    background-color: white;
+    border-radius: 4px;
+}
+
+.input-label {
+    font-weight: bold;
+    color: #495057;
+    width: 120px;
+}
+
+.count-input {
+    width: 60px;
+    padding: 5px;
+    border: 1px solid #ced4da;
+    border-radius: 4px;
+    text-align: center;
+}
+
+.amount-input {
+    width: 100px;
+    padding: 5px;
+    border: 1px solid #ced4da;
+    border-radius: 4px;
+    text-align: right;
+}
+
+.text-input {
+    width: 200px;
+    padding: 5px;
+    border: 1px solid #ced4da;
+    border-radius: 4px;
+    text-align: left;
+}
+
+.load-btn {
+    background-color: #007bff;
+    color: white;
+    border: none;
+    padding: 5px 10px;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 12px;
+    margin-left: 5px;
+}
+
+.load-btn:hover {
+    background-color: #0056b3;
+}
+
+.input-unit {
+    color: #6c757d;
+    width: 20px;
+}
+
+.output-section {
+    margin-top: 30px;
+    padding: 20px;
+    background-color: #f8f9fa;
+    border-radius: 8px;
+}
+
+.generate-btn {
+    background-color: #28a745;
+    color: white;
+    border: none;
+    padding: 10px 20px;
+    border-radius: 4px;
+    cursor: pointer;
+    font-weight: bold;
+    margin-bottom: 15px;
+}
+
+.generate-btn:hover {
+    background-color: #218838;
+}
+
+.report-output {
+    background-color: white;
+    border: 1px solid #dee2e6;
+    border-radius: 4px;
+    padding: 15px;
+    margin-top: 10px;
+    font-family: 'Courier New', monospace;
+    font-size: 14px;
+    line-height: 1.5;
+    white-space: pre-wrap;
+    max-height: 400px;
+    overflow-y: auto;
+}
