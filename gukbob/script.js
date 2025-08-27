@@ -329,9 +329,36 @@ function generateReportUrl() {
     return `${baseUrl}?data=${encodeURIComponent(compressedData)}`;
 }
 
+// 통장잔액 localStorage 관리 함수들
+function saveBankBalance() {
+    const bankBalance = document.getElementById('bankBalance').value;
+    localStorage.setItem('gukbob_bankBalance', bankBalance);
+    console.log('통장잔액 저장됨:', bankBalance);
+}
+
+function loadBankBalance() {
+    const savedBalance = localStorage.getItem('gukbob_bankBalance');
+    if (savedBalance !== null) {
+        document.getElementById('bankBalance').value = savedBalance;
+        console.log('통장잔액 불러옴:', savedBalance);
+    }
+}
+
+// 통장잔액 입력 이벤트 리스너 설정
+function setupBankBalanceAutoSave() {
+    const bankBalanceInput = document.getElementById('bankBalance');
+    if (bankBalanceInput) {
+        // 값이 변경될 때마다 자동 저장
+        bankBalanceInput.addEventListener('input', saveBankBalance);
+        bankBalanceInput.addEventListener('change', saveBankBalance);
+    }
+}
+
 // 페이지 로드 시 데이터 표시
 window.onload = function() {
     displayData();
     calculateTotal();
     loadReviewCount();
+    loadBankBalance(); // 통장잔액 불러오기
+    setupBankBalanceAutoSave(); // 자동 저장 설정
 };

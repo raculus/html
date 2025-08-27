@@ -93,7 +93,7 @@
             </div>
             <div class="input-row">
                 <span class="input-label">통장 잔액:</span>
-                <input type="number" class="amount-input" id="bankBalance" min="0" value="0" onchange="updateSummary()">
+                <input type="number" class="amount-input" id="bankBalance" min="0" value="0" onchange="updateSummary(); saveBankBalance();" oninput="saveBankBalance();">
                 <span class="input-unit">원</span>
             </div>
             <div class="input-row">
