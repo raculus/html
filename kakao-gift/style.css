@@ -112,6 +112,9 @@ button{
   font-size:12px; pointer-events:none;
 }
 
+/* 저장 시 힌트는 제외 */
+.stage.saving .product-photo::after{ display:none !important; }
+
 /* contenteditable placeholder */
 [contenteditable][data-ph]:empty:before{
   content:attr(data-ph);

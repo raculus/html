@@ -112,13 +112,59 @@ function bind(){
   };
   textSync(els.brand, v=> els.brand.textContent = v);
   textSync(els.title, v=> els.title.textContent = v);
-  textSync(els.barcodeText, v=> renderBarcode(v.replace(/\D+/g,'')));
+  // 바코드: 4자리 공백 그룹화 + 커서 유지
+  els.barcodeText.addEventListener('beforeinput', (e)=>{
+    // allow default; we handle formatting post-input
+  });
+  els.barcodeText.addEventListener('input', (e)=>{
+    const el = els.barcodeText;
+    const sel = window.getSelection();
+    const anchorOffset = sel && sel.anchorNode === el.firstChild ? sel.anchorOffset : (el.textContent ? el.textContent.length : 0);
+    const raw = (el.textContent || '').replace(/\D+/g,'');
+
+    // compute position mapping: from raw index to grouped index
+    const re = /(.{1,4})/g;
+    const chunks = raw.match(re) || [];
+    const grouped = chunks.join(' ');
+
+    // derive caret index in raw based on anchorOffset before formatting
+    const before = (el.textContent || '');
+    const rawBefore = before.slice(0, anchorOffset).replace(/\D+/g,'');
+    const rawCaret = rawBefore.length;
+
+    // set formatted text
+    el.textContent = grouped;
+    renderBarcode(raw);
+
+    // place caret after corresponding grouped position
+    const groupedCaret = (()=>{
+      // number of spaces inserted before rawCaret = Math.floor((rawCaret-1)/4)
+      if (rawCaret <= 0) return 0;
+      const spaces = Math.floor((rawCaret-1)/4);
+      return rawCaret + spaces;
+    })();
+    const range = document.createRange();
+    const node = el.firstChild || el;
+    const len = (el.textContent || '').length;
+    range.setStart(node, Math.min(groupedCaret, len));
+    range.collapse(true);
+    sel.removeAllRanges();
+    sel.addRange(range);
+  });
+  // other inline texts
+  textSync(els.brand, v=> els.brand.textContent = v);
+  textSync(els.title, v=> els.title.textContent = v);
+  textSync(els.merchant, v=> els.merchant.textContent = v);
+  textSync(els.expire, v=> els.expire.textContent = v);
+  textSync(els.order, v=> els.order.textContent = v);
   textSync(els.merchant, v=> els.merchant.textContent = v);
   textSync(els.expire, v=> els.expire.textContent = v);
   textSync(els.order, v=> els.order.textContent = v);
 
   // 저장 버튼
   els.saveBtn.addEventListener('click', async ()=>{
+    // 저장 중 상태 클래스 추가(힌트 숨김 등)
+    els.stage.classList.add('saving');
     const canvas = await html2canvas(els.stage, {
       backgroundColor: getComputedStyle(els.stage).backgroundColor || '#ffd400',
       scale: 2,
@@ -129,6 +175,7 @@ function bind(){
     a.href = dataUrl;
     a.download = `voucher_${Date.now()}.png`;
     a.click();
+    els.stage.classList.remove('saving');
   });
 }
 
