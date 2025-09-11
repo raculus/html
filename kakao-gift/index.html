@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>기프트 바우처 생성기</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <main class="app">
+    <section class="toolbar">
+      <button id="saveBtn">PNG 저장</button>
+      <input type="text" id="productImageUrl" class="url" placeholder="이미지 URL 붙여넣기 후 Enter" />
+      <!-- 파일 인풋은 숨기고 이미지 영역 클릭으로 띄움 -->
+      <input type="file" id="productImageInput" accept="image/*" hidden>
+      <span class="hint">이미지 영역 클릭 또는 붙여넣기(Ctrl+V)</span>
+    </section>
+
+    <section class="preview">
+      <!-- 노란 배경까지 포함해서 캡처 -->
+      <div id="stage" class="stage">
+        <div id="ticket" class="ticket">
+          <div class="product-photo" id="productDrop">
+            <!-- CORS 저장을 위한 속성 -->
+            <img id="productImage" alt="상품 이미지 미리보기" crossorigin="anonymous">
+          </div>
+
+          <div class="body">
+            <div class="brand" id="brandText" contenteditable="plaintext-only" data-ph="브랜드">브랜드</div>
+            <div class="title" id="titleText" contenteditable="plaintext-only" data-ph="상품명">상품명</div>
+          </div>
+
+          <div class="barcode-area">
+            <svg id="barcodeSvg"></svg>
+            <div class="barcode-text" id="barcodeText" contenteditable="plaintext-only" data-ph="바코드 숫자">0000 0000 0000</div>
+          </div>
+
+          <div class="meta">
+            <div class="row">
+              <span class="label">교환처</span>
+              <span class="value" id="merchantText" contenteditable="plaintext-only" data-ph="교환처"></span>
+            </div>
+            <div class="row">
+              <span class="label">유효기간</span>
+              <span class="value" id="expireText" contenteditable="plaintext-only" data-ph="예) 2025년 12월 31일"></span>
+            </div>
+            <div class="row">
+              <span class="label">주문번호</span>
+              <span class="value" id="orderText" contenteditable="plaintext-only" data-ph="주문번호"></span>
+            </div>
+          </div>
+
+          <div class="footer">
+            <span class="kt">kakaotalk 선물하기</span>
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <!-- 라이브러리 -->
+  <script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.5/dist/JsBarcode.all.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
+  <script src="script.js"></script>
+</body>
+</html>
