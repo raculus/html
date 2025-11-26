@@ -33,37 +33,6 @@ function getUrlParams() {
     };
 }
 
-// TOT_DC_AMT를 체험단과 서비스로 분리하는 함수
-function separateExperienceAndService(totDcAmt) {
-    const amount = parseInt(totDcAmt) || 0;
-    
-    if (amount === 0) {
-        return {
-            experienceAmount: 0,
-            experienceCount: 0,
-            serviceAmount: 0,
-            serviceCount: 0
-        };
-    }
-    
-    // 25000으로 나누어떨어지면 체험단으로 분류
-    if (amount % 25000 === 0) {
-        return {
-            experienceAmount: amount,
-            experienceCount: amount / 25000,
-            serviceAmount: 0,
-            serviceCount: 0
-        };
-    } else {
-        // 나누어떨어지지 않으면 서비스로 분류
-        return {
-            experienceAmount: 0,
-            experienceCount: 0,
-            serviceAmount: amount,
-            serviceCount: 1
-        };
-    }
-}
 
 // 숫자 포맷팅 (천단위 콤마)
 function formatNumber(num) {
@@ -101,6 +70,21 @@ function calculateTotal() {
     
 }
 
+// helper to set value and mark field as loaded from URL
+function markInputLoaded(el, value) {
+    if (!el) return;
+    el.value = value;
+    el.classList.add('loaded');
+    // If user edits afterwards, remove the "loaded" marker
+    function removeLoaded() {
+        el.classList.remove('loaded');
+        el.removeEventListener('input', removeLoaded);
+        el.removeEventListener('change', removeLoaded);
+    }
+    el.addEventListener('input', removeLoaded);
+    el.addEventListener('change', removeLoaded);
+}
+
 // 데이터 표시
 function displayData() {
     const params = getUrlParams();
@@ -114,52 +98,34 @@ function displayData() {
         return;
     }
 
-    // TOT_DC_AMT를 체험단과 서비스로 분리
-    const separated = separateExperienceAndService(params.TOT_DC_AMT);
-
-    const dataLabels = {
-        TOT_DC_AMT: '서비스 금액',
-        TOT_REM_AMT: '현재 시재',
-        LOSS_CASH_AMT: '과부족',
-        DCM_SALE_AMT: '카드 매출',
-        CASH_AMT: '현금 매출',
-        TOTAL_SALE_AMT: '금일 총 매출',
-        monthly_data: '월 매출총액',
-        POS_CSH_OUT_AMT: '지출',
-        review_count: '리뷰 수'
-    };
-
     let html = '';
 
-    
-    // 분리된 체험단/서비스 정보 표시
-    if (separated.experienceAmount > 0) {
-        document.getElementById('experienceAmount').value = separated.experienceAmount;
-        document.getElementById('experienceCount').value = separated.experienceCount;
+    const amount = parseInt(params.TOT_DC_AMT) || 0;
+    if (amount > 0) {
+        // mark inputs that were populated from URL
+        markInputLoaded(document.getElementById('experienceAmount'), amount);
+        markInputLoaded(document.getElementById('experienceCount'), Math.round(amount / 25000));
     }
     
-    if (separated.serviceAmount > 0) {
-        document.getElementById('serviceAmount').value = separated.serviceAmount;
-        document.getElementById('serviceCount').value = separated.serviceCount;
+
+    // mark monthly and review if present
+    if (params.monthly_data !== null && params.monthly_data !== '') {
+        markInputLoaded(document.getElementById('monthlyTotal'), parseInt(params.monthly_data));
+    } else {
+        // keep original behaviour when no param
+        // document.getElementById('monthlyTotal').value = parseInt(params.monthly_data) || -1;;
     }
-    
-    // 나머지 파라미터들 표시
-    for (const [key, value] of Object.entries(params)) {
-        if (value === null) { continue; }
-        let typeStr = "원";
-        if (key === 'review_count') { typeStr = "팀"; }
-        const isNegative = parseInt(value) < 0;
-        html += `
-        <div class="data-item">
-        <span class="label">${dataLabels[key]}:</span>
-        <span class="value ${isNegative ? 'negative' : ''}">${formatNumber(value)}${typeStr}</span>
-        </div>
-        `;
-        
+    if (params.review_count !== null && params.review_count !== '') {
+        markInputLoaded(document.getElementById('reviewCount'), parseInt(params.review_count));
+    } else {
+        // document.getElementById('reviewCount').value = parseInt(params.review_count) || -1;
     }
-    
-    document.getElementById('monthlyTotal').value = parseInt(params.monthly_data) || -1;;
-    document.getElementById('reviewCount').value = parseInt(params.review_count) || -1;
+
+    // If current cash (TOT_REM_AMT) exists, set todays cash UI and mark it
+    if (params.TOT_REM_AMT !== null && params.TOT_REM_AMT !== '') {
+        markInputLoaded(document.getElementById('todayCash'), parseInt(params.TOT_REM_AMT));
+    }
+
     container.innerHTML = html;
 }
 

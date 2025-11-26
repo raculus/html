@@ -246,3 +246,25 @@ h2 {
     max-height: 400px;
     overflow-y: auto;
 }
+
+/* Highlight inputs that were populated from URL */
+input.loaded,
+select.loaded,
+textarea.loaded {
+    border: 2px solid #32c14c; /* green */
+    box-shadow: 0 0 6px rgba(50, 193, 76, 0.15);
+    transition: box-shadow 0.15s ease, border-color 0.15s ease;
+}
+/* Keep the padding/line-height consistent */
+input.loaded:focus,
+select.loaded:focus,
+textarea.loaded:focus {
+    box-shadow: 0 0 8px rgba(50, 193, 76, 0.25);
+}
+/* Optional - more specific styles for your classes */
+.count-input.loaded,
+.amount-input.loaded,
+.cash-input.loaded,
+.text-input.loaded {
+    border-radius: 6px;
+}
