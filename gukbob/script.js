@@ -28,7 +28,8 @@ function getUrlParams() {
         LOSS_CASH_AMT: params.get('LOSS_CASH_AMT'),
         DCM_SALE_AMT: params.get('DCM_SALE_AMT'),
         CASH_AMT: params.get('CASH_AMT'),
-        monthly_data: params.get('monthly_data')
+        monthly_data: params.get('monthly_data'),
+        review_count: params.get('review_count')
     };
 }
 
@@ -100,42 +101,6 @@ function calculateTotal() {
     
 }
 
-// 리뷰 불러오기
-async function loadReviewCount() {
-    try {
-        // 현재 월.일 계산
-        const today = new Date();
-        const month = today.getMonth() + 1;
-        const day = today.getDate();
-        const monthDay = `${month}.${day}`;
-        
-        const apiUrl = `https://api.jaehy.uk/1688300738/count/${monthDay}`;
-        console.log('API 호출:', apiUrl);
-        
-        const response = await fetch(apiUrl);
-        
-        if (!response.ok) {
-            throw new Error(`HTTP error! status: ${response.status}`);
-        }
-        
-        const data = await response.text();
-        // data = API 응답: {"success":true,"placeId":"1688300738","targetDate":"8.10","count":0,"url":"https://m.place.naver.com/restaurant/1688300738/review/visitor?reviewSort=recent","extractedAt":"2025-08-09T19:26:51.652Z"}
-        const jsonData = JSON.parse(data);
-        const reviewCount = jsonData.count;
-
-        if (isNaN(reviewCount)) {
-            throw new Error('Invalid response data');
-        }
-        
-        document.getElementById('reviewCount').value = reviewCount;
-        console.log('리뷰 개수 로드 성공:', reviewCount);
-        
-    } catch (error) {
-        console.error('리뷰 개수 로드 실패:', error);
-        document.getElementById('reviewCount').value = 0;
-    }
-}
-
 // 데이터 표시
 function displayData() {
     const params = getUrlParams();
@@ -160,7 +125,8 @@ function displayData() {
         CASH_AMT: '현금 매출',
         TOTAL_SALE_AMT: '금일 총 매출',
         monthly_data: '월 매출총액',
-        POS_CSH_OUT_AMT: '지출'
+        POS_CSH_OUT_AMT: '지출',
+        review_count: '리뷰 수'
     };
 
     let html = '';
@@ -179,34 +145,33 @@ function displayData() {
     
     // 나머지 파라미터들 표시
     for (const [key, value] of Object.entries(params)) {
-        if (value !== null) {
-            const isNegative = parseInt(value) < 0;
-            html += `
-            <div class="data-item">
-            <span class="label">${dataLabels[key]}:</span>
-            <span class="value ${isNegative ? 'negative' : ''}">${formatNumber(value)}원</span>
-            </div>
-            `;
-        }
+        if (value === null) { continue; }
+        let typeStr = "원";
+        if (key === 'review_count') { typeStr = "팀"; }
+        const isNegative = parseInt(value) < 0;
+        html += `
+        <div class="data-item">
+        <span class="label">${dataLabels[key]}:</span>
+        <span class="value ${isNegative ? 'negative' : ''}">${formatNumber(value)}${typeStr}</span>
+        </div>
+        `;
+        
     }
     
-    document.getElementById('monthlyTotal').value = parseInt(params.monthly_data) || 0;;
+    document.getElementById('monthlyTotal').value = parseInt(params.monthly_data) || -1;;
+    document.getElementById('reviewCount').value = parseInt(params.review_count) || -1;
     container.innerHTML = html;
 }
 
 function generateQRCode() {
     const url = generateReportUrl();
-    console.log('Generated URL:', url);
     var svgNode = QRCode({
      msg :  `${url}`
-    ,dim :   300
+    ,dim :   500
     ,pad :   6
-    ,mtx :   7
-    ,ecl :  "H"
-    ,ecb :   0
     ,pal : ["#000000", "#f2f4f8"]
-    ,vrb :   1
     });
+    svgNode = QRCode(url);
 
     document.getElementById("qrcode-svg").appendChild(svgNode);
     svgNode.onclick = () => {
