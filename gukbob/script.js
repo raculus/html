@@ -166,9 +166,7 @@ function generateReportUrl() {
     const currentCash = parseInt(params.TOT_REM_AMT) || 0;
     const monthlyDataAmount = parseInt(params.monthly_data) || 0;
     
-    // TOT_DC_AMT를 체험단과 서비스로 분리
-    const separated = separateExperienceAndService(params.TOT_DC_AMT);
-    
+
     // 입력된 값들 가져오기
     const lossCount = parseInt(document.getElementById('lossCount').value) || 0;
     const serviceCountInput = parseInt(document.getElementById('serviceCount').value) || 0;
@@ -217,10 +215,10 @@ function generateReportUrl() {
         totalSales: totalSales,
         cashSales: cashSales,
         cardSales: cardSales,
-        serviceAmount: serviceAmountInput || separated.serviceAmount,
-        serviceCount: serviceCountInput || separated.serviceCount,
-        experienceAmount: experienceAmountInput || separated.experienceAmount,
-        experienceCount: experienceCountInput || separated.experienceCount,
+        serviceAmount: serviceAmountInput,
+        serviceCount: serviceCountInput,
+        experienceAmount: experienceAmountInput,
+        experienceCount: experienceCountInput,
         returnAmount: returnAmount,
         returnDetails: returnDetails || formatNumber(returnAmount) + '원',
         adjustedTotalSales: adjustedTotalSales,
