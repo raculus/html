@@ -131,14 +131,9 @@ function displayData() {
 
 function generateQRCode() {
     const url = generateReportUrl();
-    var svgNode = QRCode({
-     msg :  `${url}`
-    ,dim :   500
-    ,pad :   6
-    ,pal : ["#000000", "#f2f4f8"]
-    });
-    svgNode = QRCode(url);
+    var svgNode = QRCode(url);
 
+    document.getElementById("qrcode-svg").innerHTML = ""; // 기존 QR 코드 제거
     document.getElementById("qrcode-svg").appendChild(svgNode);
     svgNode.onclick = () => {
         window.open(url, '_blank');
