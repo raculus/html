@@ -1,0 +1,177 @@
+<!doctype html>
+<html lang="ko">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>Path → QR</title>
+    <style>
+        :root {
+            --bg: linear-gradient(135deg,#f6f8ff 0%,#e8f0ff 100%);
+            --card: #fff;
+            --muted: #6b7280;
+        }
+        html,body {
+            height: 100%;
+            margin: 0;
+            font-family: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial;
+            background: var(--bg);
+            color: #111827;
+        }
+        .wrap {
+            min-height: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 24px;
+        }
+        .card {
+            background: var(--card);
+            border-radius: 12px;
+            box-shadow: 0 8px 30px rgba(17,24,39,0.06);
+            padding: 28px;
+            width: min(92vw, 420px);
+            text-align: center;
+        }
+        h1 { margin: 0 0 8px; font-size: 18px; font-weight: 600; }
+        p.desc { margin: 0 0 18px; color: var(--muted); font-size: 13px; }
+        #qrcode { margin: 0 auto 12px; width: 280px; height: 280px; display: grid; place-items: center; }
+        .value {
+            font-size: 13px;
+            color: var(--muted);
+            word-break: break-all;
+            padding: 6px 8px;
+            background: #f8fafc;
+            border-radius: 8px;
+            display: inline-block;
+        }
+        .tools { margin-top: 16px; display:flex; justify-content:center; gap:8px; }
+        button {
+            padding: 8px 12px;
+            border: none;
+            background: #2563eb;
+            color: #fff;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 600;
+        }
+        button.secondary {
+            background: transparent;
+            color: #374151;
+            border: 1px solid #e6e9ef;
+        }
+        @media (max-width:420px){
+            #qrcode { width: 220px; height:220px; }
+        }
+    </style>
+</head>
+<body>
+    <div class="wrap">
+        <div class="card" role="main">
+            <p class="desc">URL의 경로 부분을 QR로 생성합니다. (예: example.com/#abc → "abc")</p>
+
+            <div id="qrcode" aria-hidden="true"></div>
+
+            <div id="value" class="value" aria-live="polite"></div>
+
+            <div class="tools">
+                <button id="downloadBtn">QR 다운로드</button>
+                <button class="secondary" id="copyBtn">경로 복사</button>
+            </div>
+        </div>
+    </div>
+
+    <script type="text/javascript" src="../gukbob/qrcode.min.js"></script>
+    <script>
+        (function () {
+            // 현재 URL 경로에서 앞의 슬래시 제거. 전체 경로(ex: a/b)를 모두 사용하려면 다음 줄 그대로 둡니다.
+            const rawPath = (() => {
+                // 1) hash 우선: /qr/#abc 같은 경우
+                if (window.location.hash && window.location.hash.length > 1) {
+                    return decodeURIComponent(window.location.hash.slice(1));
+                }
+                // 2) query param: ?path=abc 또는 ?p=abc
+                const params = new URLSearchParams(window.location.search);
+                const q = params.get('path') || params.get('p');
+                if (q) return decodeURIComponent(q);
+                // 3) pathname: /qr/abc 또는 /qr/index.html/abc -> abc or abc/def
+                let pathname = decodeURIComponent(window.location.pathname);
+                pathname = pathname.replace(/index\.html\/?/, ''); // index.html 제거
+                const segments = pathname.split('/').filter(Boolean); // 빈 세그먼트 제거
+                if (segments.length <= 1) return ''; // /qr/ 같은 경우 빈 값 리턴
+                return segments.slice(1).join('/'); // base 폴더 다음 경로 전체 (abc/def)
+            })();
+            // rawPath가 비어있으면 호스트 전체를 QR로 사용합니다.
+            const value = rawPath || window.location.href;
+            const displayValue = rawPath || window.location.href;
+
+            document.getElementById('value').textContent = displayValue;
+
+            // QR 생성
+            const qrcodeEl = document.getElementById('qrcode');
+            // clear 기존
+            const qr = QRCode(value);
+            qrcodeEl.innerHTML = '';
+            qrcodeEl.appendChild(qr);
+
+            // 다운로드 버튼: 이미지가 있으면 사용, 아니면 canvas 변환
+            const downloadBtn = document.getElementById('downloadBtn');
+            downloadBtn.addEventListener('click', () => {
+                // qrcode.js는 브라우저에 따라 img 또는 table로 렌더링합니다.
+                // img가 있으면 그 src를 사용, 없으면 canvas로 변환
+                const img = qrcodeEl.querySelector('img');
+                if (img && img.src) {
+                    downloadDataUrl(img.src, (rawPath || 'qrcode') + '.png');
+                    return;
+                }
+
+                // table -> canvas 변환 (fallback)
+                const table = qrcodeEl.querySelector('table');
+                if (table) {
+                    // 그리드를 읽어 canvas로 변환
+                    const moduleSize = 6; // 픽셀 단위 확대 (크기 조절)
+                    const rows = table.rows.length;
+                    const cols = table.rows[0].cells.length;
+                    const canvas = document.createElement('canvas');
+                    canvas.width = cols * moduleSize;
+                    canvas.height = rows * moduleSize;
+                    const ctx = canvas.getContext('2d');
+
+                    for (let r = 0; r < rows; r++) {
+                        for (let c = 0; c < cols; c++) {
+                            const isDark = table.rows[r].cells[c].style.backgroundColor !== '' && table.rows[r].cells[c].style.backgroundColor !== 'transparent';
+                            ctx.fillStyle = isDark ? '#111827' : '#ffffff';
+                            ctx.fillRect(c * moduleSize, r * moduleSize, moduleSize, moduleSize);
+                        }
+                    }
+                    const url = canvas.toDataURL('image/png');
+                    downloadDataUrl(url, (rawPath || 'qrcode') + '.png');
+                    return;
+                }
+
+                alert('QR 이미지를 찾을 수 없습니다.');
+            });
+
+            // 복사 버튼: 경로 값 복사
+            const copyBtn = document.getElementById('copyBtn');
+            copyBtn.addEventListener('click', async () => {
+                try {
+                    await navigator.clipboard.writeText(value);
+                    copyBtn.textContent = '복사됨';
+                    setTimeout(() => copyBtn.textContent = '경로 복사', 1200);
+                } catch (e) {
+                    alert('클립보드에 복사할 수 없습니다.');
+                }
+            });
+
+            function downloadDataUrl(dataUrl, filename) {
+                const a = document.createElement('a');
+                a.href = dataUrl;
+                a.download = filename;
+                document.body.appendChild(a);
+                a.click();
+                a.remove();
+            }
+        })();
+    </script>
+</body>
+</html>
