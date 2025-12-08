@@ -130,12 +130,23 @@ function displayData() {
 }
 
 function generateQRCode() {
+    const qrNode = document.getElementById("qrcode");
+    qrNode.innerHTML = ""; // 기존 QR 코드 제거
     const url = generateReportUrl();
-    var svgNode = QRCode(url);
+    var qrcode = new QRCode(qrNode, {
+        text: url,
+        width: 512,
+        height: 512,
+        colorDark : "#000000",
+        colorLight : "#ffffff",
+        correctLevel : QRCode.CorrectLevel.L
+    });
 
-    document.getElementById("qrcode-svg").innerHTML = ""; // 기존 QR 코드 제거
-    document.getElementById("qrcode-svg").appendChild(svgNode);
-    svgNode.onclick = () => {
+    console.log('Generated QR Code for URL:', url);
+
+    // document.getElementById("qrcode-svg").innerHTML = ""; // 기존 QR 코드 제거
+    // document.getElementById("qrcode-svg").appendChild(svgNode);
+    qrNode.onclick = () => {
         window.open(url, '_blank');
     };
 }

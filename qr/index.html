@@ -128,8 +128,14 @@
 
                 // QR 생성 (기존 내용 정리)
                 qrcodeEl.innerHTML = '';
-                const qrNode = QRCode(value);
-                qrcodeEl.appendChild(qrNode);
+                var qrcode = new QRCode(qrcodeEl, {
+                    text: value,
+                    width: 256,
+                    height: 256,
+                    colorDark : "#000000",
+                    colorLight : "#ffffff",
+                    correctLevel : QRCode.CorrectLevel.L
+                });
             }
 
             // 초기 렌더
