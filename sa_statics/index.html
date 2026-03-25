@@ -1,0 +1,207 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <title>서든어택 매치 통계 분석기</title>
+    <style>
+        body { font-family: 'Pretendard', -apple-system, sans-serif; background: #f0f2f5; padding: 20px; color: #333; line-height: 1.6; }
+        .container { max-width: 1100px; margin: 0 auto; background: white; padding: 30px; border-radius: 12px; box-shadow: 0 4px 20px rgba(0,0,0,0.08); }
+        h2 { margin-top: 0; color: #1a1a1a; border-left: 5px solid #007bff; padding-left: 15px; }
+        
+        textarea { width: 100%; height: 120px; margin-bottom: 15px; border: 1px solid #ddd; border-radius: 8px; padding: 15px; box-sizing: border-box; resize: vertical; font-size: 13px; }
+        
+        /* 상단 통계 카드 */
+        .summary-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 15px; margin-bottom: 25px; }
+        .summary-card { background: #ffffff; padding: 20px; border-radius: 10px; text-align: center; border: 1px solid #e1e4e8; box-shadow: 0 2px 5px rgba(0,0,0,0.02); }
+        .summary-card div:first-child { font-size: 0.85rem; color: #666; margin-bottom: 8px; font-weight: 600; }
+        .summary-card div:last-child { font-size: 1.5rem; font-weight: 800; color: #007bff; }
+
+        .controls { display: flex; gap: 10px; margin-bottom: 25px; }
+        button { flex: 2; padding: 14px; background: #007bff; color: white; border: none; border-radius: 8px; cursor: pointer; font-weight: bold; transition: background 0.2s; }
+        button:hover { background: #0056b3; }
+        select { flex: 1; padding: 10px; border: 1px solid #ddd; border-radius: 8px; background: #fff; font-size: 1rem; outline: none; }
+        
+        table { width: 100%; border-collapse: collapse; background: white; border-radius: 8px; overflow: hidden; }
+        th, td { border: 1px solid #f0f0f0; padding: 15px; text-align: center; }
+        th { background: #f8f9fa; cursor: pointer; font-weight: 700; font-size: 0.9rem; transition: background 0.2s; user-select: none; }
+        th:hover { background: #edf2f7; }
+        th.asc::after { content: " ↑"; color: #007bff; }
+        th.desc::after { content: " ↓"; color: #007bff; }
+        tbody tr:hover { background: #fcfcfc; }
+        .text-win { color: #f15e36; font-weight: bold; }
+        .text-loss { color: #ccc; font-weight: bold; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h2>서든어택 전적 데이터 분석</h2>
+    <p style="font-size: 0.9rem; color: #666;">병영 홈페이지 전체 또는 일부 내용을 복사해서 붙여넣으세요.</p>
+    <textarea id="rawData" placeholder="전체 복사한 텍스트를 여기에 붙여넣으세요..."></textarea>
+    
+    <div class="controls">
+        <button onclick="processData()">데이터 분석 및 필터 갱신</button>
+        <select id="matchFilter" onchange="applyFilter()">
+            <option value="all">모든 매치 분류</option>
+        </select>
+    </div>
+
+    <div id="summary" class="summary-grid"></div>
+    <div id="result"></div>
+</div>
+
+<script>
+let allParsedRecords = [];
+let filteredStats = [];
+let sortConfig = { key: 'play', direction: 'desc' };
+
+function processData() {
+    let text = document.getElementById('rawData').value;
+    if (!text.trim()) return alert("데이터를 입력해주세요.");
+
+    // 1. 필요한 구간 자르기 (SP 아레나 ~ 타격 동향)
+    const startIdx = text.indexOf("SP 아레나");
+    const endIdx = text.indexOf("타격 동향");
+    
+    if (startIdx !== -1 && endIdx !== -1 && startIdx < endIdx) {
+        text = text.substring(startIdx, endIdx);
+    }
+
+    const records = text.split('▼').filter(r => r.trim() !== "");
+    allParsedRecords = [];
+    const matchTypes = new Set();
+
+    records.forEach(record => {
+        const lines = record.trim().split('\n').map(l => l.trim()).filter(l => l !== "");
+        console.log(lines);
+        // 파싱 로직 보정 (불필요한 공백 라인 제거 후 인덱스 접근)
+        // 0:시간, 1:맵, 2:매치타입, 3:인원, 4:결과, 5:킬, 6:데스, 7:헤드샷, 8:대미지, 9:어시스트 (텍스트 구조에 따라 다를 수 있음)
+        if (lines.length < 8) return;
+
+        allParsedRecords.push({
+            map: lines[1],
+            matchType: lines[2],
+            result: lines[4],
+            kill: parseInt(lines[5]) || 0,
+            death: parseInt(lines[7]) || 0,
+            headshot: parseInt(lines[9]) || 0,
+            damage: parseInt(lines[11]) || 0
+        });
+        matchTypes.add(lines[2]);
+    });
+
+    const filter = document.getElementById('matchFilter');
+    filter.innerHTML = '<option value="all">모든 매치 분류</option>';
+    matchTypes.forEach(type => {
+        const opt = document.createElement('option');
+        opt.value = opt.textContent = type;
+        filter.appendChild(opt);
+    });
+
+    applyFilter();
+}
+
+function applyFilter() {
+    const selectedType = document.getElementById('matchFilter').value;
+    const filtered = selectedType === 'all' 
+        ? allParsedRecords 
+        : allParsedRecords.filter(r => r.matchType === selectedType);
+
+    if (filtered.length === 0) {
+        document.getElementById('summary').innerHTML = "";
+        document.getElementById('result').innerHTML = "표시할 데이터가 없습니다.";
+        return;
+    }
+
+    // 총계 대시보드 계산
+    const total = filtered.reduce((acc, cur) => {
+        acc.play++;
+        if (cur.result === '승') acc.win++;
+        acc.kills += cur.kill;
+        acc.deaths += cur.death;
+        acc.damage += cur.damage;
+        acc.headshots += cur.headshot;
+        return acc;
+    }, { play: 0, win: 0, kills: 0, deaths: 0, damage: 0, headshots: 0 });
+
+    renderSummary(total);
+
+    // 맵별 그룹화
+    const statsMap = {};
+    filtered.forEach(r => {
+        if (!statsMap[r.map]) {
+            statsMap[r.map] = { name: r.map, play: 0, win: 0, kills: 0, deaths: 0, damage: 0, headshots: 0 };
+        }
+        const s = statsMap[r.map];
+        s.play++;
+        if (r.result === '승') s.win++;
+        s.kills += r.kill;
+        s.deaths += r.death;
+        s.damage += r.damage;
+        s.headshots += r.headshot;
+    });
+
+    filteredStats = Object.values(statsMap).map(s => ({
+        ...s,
+        winRate: (s.win / s.play) * 100,
+        kd: s.deaths === 0 ? s.kills : s.kills / s.deaths,
+        avgDmg: s.damage / s.play,
+        avgHead: s.headshots / s.play
+    }));
+
+    sortData(sortConfig.key, true);
+}
+
+function renderSummary(t) {
+    const winRate = ((t.win / t.play) * 100).toFixed(1);
+    const kd = t.deaths === 0 ? t.kills.toFixed(2) : (t.kills / t.deaths).toFixed(2);
+    const avgDmg = (t.damage / t.play).toFixed(0);
+    const avgHead = (t.headshots / t.play).toFixed(1);
+
+    document.getElementById('summary').innerHTML = `
+        <div class="summary-card"><div>총 판수</div><div>${t.play}</div></div>
+        <div class="summary-card"><div>총 승률</div><div>${winRate}%</div></div>
+        <div class="summary-card"><div>평균 K/D</div><div>${kd}</div></div>
+        <div class="summary-card"><div>평균 대미지</div><div>${avgDmg}</div></div>
+        <div class="summary-card"><div>평균 헤드샷</div><div>${avgHead}</div></div>
+    `;
+}
+
+function sortData(key, keepDir = false) {
+    if (!keepDir) {
+        sortConfig.direction = (sortConfig.key === key && sortConfig.direction === 'desc') ? 'asc' : 'desc';
+        sortConfig.key = key;
+    }
+    filteredStats.sort((a, b) => {
+        if (key === 'name') return sortConfig.direction === 'asc' ? a.name.localeCompare(b.name) : b.name.localeCompare(a.name);
+        return sortConfig.direction === 'asc' ? a[key] - b[key] : b[key] - a[key];
+    });
+    renderTable();
+}
+
+function renderTable() {
+    const cls = (k) => sortConfig.key === k ? sortConfig.direction : "";
+    let html = `<table><thead><tr>
+        <th onclick="sortData('name')" class="${cls('name')}">맵 이름</th>
+        <th onclick="sortData('play')" class="${cls('play')}">판수</th>
+        <th onclick="sortData('winRate')" class="${cls('winRate')}">승률</th>
+        <th onclick="sortData('kd')" class="${cls('kd')}">K/D</th>
+        <th onclick="sortData('avgDmg')" class="${cls('avgDmg')}">평균 대미지</th>
+        <th onclick="sortData('avgHead')" class="${cls('avgHead')}">평균 헤드샷</th>
+    </tr></thead><tbody>`;
+
+    filteredStats.forEach(s => {
+        html += `<tr>
+            <td>${s.name}</td>
+            <td>${s.play}</td>
+            <td class="${s.winRate >= 50 ? 'text-win' : 'text-loss'}">${s.winRate.toFixed(1)}%</td>
+            <td>${s.kd.toFixed(2)}</td>
+            <td>${Math.round(s.avgDmg)}</td>
+            <td>${s.avgHead.toFixed(1)}</td>
+        </tr>`;
+    });
+    document.getElementById('result').innerHTML = html + `</tbody></table>`;
+}
+</script>
+</body>
+</html>
